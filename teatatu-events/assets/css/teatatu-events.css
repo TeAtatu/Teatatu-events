@@ -1,0 +1,404 @@
+/* Teatatu Events — minimal structural styles. Colours inherit from the theme
+   wherever possible; badges and buttons use currentColor-friendly tints. */
+
+.tte,
+.tte-details {
+	--tte-gap: 1.25em;
+	--tte-muted: rgba(0, 0, 0, 0.62);
+	--tte-line: rgba(0, 0, 0, 0.12);
+	--tte-badge-bg: rgba(0, 0, 0, 0.06);
+	--tte-accent: #2271b1;
+	--tte-cancel: #b32d2e;
+	margin: 0 0 1.5em;
+}
+
+@media (prefers-color-scheme: dark) {
+	.tte,
+	.tte-details {
+		--tte-muted: rgba(255, 255, 255, 0.7);
+		--tte-line: rgba(255, 255, 255, 0.18);
+		--tte-badge-bg: rgba(255, 255, 255, 0.1);
+	}
+}
+
+/* Lists ------------------------------------------------------------------ */
+.tte-list,
+.tte-latest {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.tte-list-item {
+	display: flex;
+	gap: 1em;
+	margin: 0 0 var(--tte-gap);
+	padding-bottom: var(--tte-gap);
+	border-bottom: 1px solid var(--tte-line);
+}
+
+.tte-list-item:last-child {
+	border-bottom: 0;
+}
+
+.tte-list-item .tte-image-link {
+	flex: 0 0 140px;
+}
+
+.tte-latest .tte-list-item {
+	margin-bottom: 0.75em;
+	padding-bottom: 0.75em;
+}
+
+/* Grid ------------------------------------------------------------------- */
+.tte-grid {
+	display: grid;
+	grid-template-columns: repeat(var(--tte-columns, 3), minmax(0, 1fr));
+	gap: var(--tte-gap);
+}
+
+@media (max-width: 782px) {
+	.tte-grid {
+		grid-template-columns: 1fr;
+	}
+	.tte-list-item {
+		flex-direction: column;
+	}
+	.tte-list-item .tte-image-link {
+		flex-basis: auto;
+	}
+}
+
+.tte-card {
+	display: flex;
+	flex-direction: column;
+	border: 1px solid var(--tte-line);
+	border-radius: 6px;
+	overflow: hidden;
+}
+
+.tte-card .tte-body {
+	padding: 0.85em 1em 1em;
+}
+
+/* Item ------------------------------------------------------------------- */
+.tte-image-link {
+	display: block;
+}
+
+.tte-image {
+	display: block;
+	width: 100%;
+	height: auto;
+	aspect-ratio: 16 / 9;
+	object-fit: cover;
+}
+
+.tte-title {
+	margin: 0.15em 0 0.3em;
+	font-size: 1.1em;
+	line-height: 1.3;
+}
+
+.tte-title a {
+	text-decoration: none;
+}
+
+.tte-when {
+	margin: 0 0 0.2em;
+	font-weight: 600;
+}
+
+.tte-where,
+.tte-meta,
+.tte-link-note {
+	margin: 0 0 0.35em;
+	font-size: 0.9em;
+	color: var(--tte-muted);
+}
+
+.tte-link-note {
+	font-style: italic;
+}
+
+.tte-excerpt p {
+	margin: 0.4em 0;
+}
+
+.tte-tags,
+.tte-badges {
+	margin: 0.3em 0;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.35em;
+}
+
+.tte-badge {
+	display: inline-block;
+	padding: 0.1em 0.55em;
+	border-radius: 999px;
+	font-size: 0.78em;
+	line-height: 1.6;
+	background: var(--tte-badge-bg);
+}
+
+.tte-tag {
+	border-left: 3px solid var(--tte-tag-color, var(--tte-accent));
+	border-radius: 3px;
+}
+
+.tte-status-cancelled.tte-status,
+.tte-status-postponed.tte-status {
+	background: var(--tte-cancel);
+	color: #fff;
+}
+
+.tte-status-rescheduled.tte-status,
+.tte-status-sold_out.tte-status {
+	background: #996800;
+	color: #fff;
+}
+
+.tte-status-cancelled .tte-title a,
+li.tte-status-cancelled > a {
+	text-decoration: line-through;
+}
+
+.tte-is-past {
+	opacity: 0.75;
+}
+
+.tte-actions {
+	margin: 0.5em 0 0;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5em;
+	align-items: center;
+	font-size: 0.92em;
+}
+
+.tte-button {
+	display: inline-block;
+	padding: 0.35em 0.9em;
+	border: 1px solid currentColor;
+	border-radius: 4px;
+	text-decoration: none;
+	font-weight: 600;
+}
+
+.tte-group-heading {
+	margin: 1.2em 0 0.6em;
+	font-size: 1em;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: var(--tte-muted);
+}
+
+.tte-empty {
+	font-style: italic;
+	color: var(--tte-muted);
+}
+
+.tte-pager {
+	display: flex;
+	justify-content: space-between;
+	margin-top: 1em;
+}
+
+.tte-admin-notice {
+	padding: 0.75em 1em;
+	background: #fcf0f1;
+	border-left: 4px solid var(--tte-cancel, #b32d2e);
+}
+
+/* Visitor filters ---------------------------------------------------------- */
+.tte-filters {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.6em 1em;
+	align-items: flex-end;
+	margin: 0 0 1.25em;
+	padding: 0.8em;
+	border: 1px solid var(--tte-line);
+	border-radius: 6px;
+}
+
+.tte-filter {
+	display: flex;
+	flex-direction: column;
+	font-size: 0.85em;
+	gap: 0.2em;
+}
+
+.tte-filter select,
+.tte-filter input {
+	min-width: 9em;
+	max-width: 100%;
+}
+
+.tte-filter-reset {
+	font-size: 0.85em;
+	align-self: center;
+}
+
+/* Calendar ----------------------------------------------------------------- */
+.tte-calendar-nav {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 0.6em;
+}
+
+.tte-calendar-nav a {
+	text-decoration: none;
+	font-size: 1.3em;
+	padding: 0 0.4em;
+}
+
+.tte-calendar-title {
+	margin: 0;
+}
+
+.tte-calendar-grid {
+	display: grid;
+	grid-template-columns: repeat(7, minmax(0, 1fr));
+	border-top: 1px solid var(--tte-line);
+	border-left: 1px solid var(--tte-line);
+}
+
+.tte-calendar-weekday,
+.tte-calendar-day {
+	border-right: 1px solid var(--tte-line);
+	border-bottom: 1px solid var(--tte-line);
+	padding: 0.3em;
+	min-width: 0;
+}
+
+.tte-calendar-weekday {
+	font-size: 0.8em;
+	font-weight: 600;
+	text-align: center;
+	color: var(--tte-muted);
+}
+
+.tte-calendar-day {
+	min-height: 6em;
+	font-size: 0.85em;
+}
+
+.tte-calendar-day.tte-outside {
+	opacity: 0.4;
+}
+
+.tte-calendar-day.tte-today .tte-calendar-date {
+	background: var(--tte-accent);
+	color: #fff;
+	border-radius: 999px;
+	padding: 0 0.45em;
+}
+
+.tte-calendar-dow {
+	display: none;
+}
+
+.tte-calendar-events {
+	list-style: none;
+	margin: 0.3em 0 0;
+	padding: 0;
+}
+
+.tte-calendar-events li {
+	margin: 0 0 0.25em;
+	line-height: 1.25;
+	overflow-wrap: anywhere;
+}
+
+.tte-calendar-events a {
+	text-decoration: none;
+}
+
+.tte-calendar-time {
+	font-weight: 600;
+	margin-right: 0.25em;
+}
+
+/* Phones: the grid becomes an agenda of days that have events. */
+@media (max-width: 600px) {
+	.tte-calendar-grid {
+		display: block;
+		border: 0;
+	}
+	.tte-calendar-weekday,
+	.tte-calendar-day.tte-no-events,
+	.tte-calendar-day.tte-outside {
+		display: none;
+	}
+	.tte-calendar-day {
+		min-height: 0;
+		border: 0;
+		border-bottom: 1px solid var(--tte-line);
+		padding: 0.6em 0;
+		font-size: 1em;
+	}
+	.tte-calendar-dow {
+		display: inline;
+	}
+	.tte-calendar-date {
+		font-weight: 700;
+	}
+}
+
+/* Single event details ------------------------------------------------------ */
+.tte-details {
+	margin: 0 0 1.5em;
+	padding: 1em 1.2em;
+	border: 1px solid var(--tte-line);
+	border-radius: 6px;
+}
+
+.tte-details-list {
+	display: grid;
+	grid-template-columns: max-content 1fr;
+	gap: 0.3em 1em;
+	margin: 0 0 0.5em;
+}
+
+.tte-details-list dt {
+	font-weight: 600;
+}
+
+.tte-details-list dd {
+	margin: 0;
+}
+
+.tte-notice-past {
+	font-style: italic;
+	color: var(--tte-muted);
+}
+
+.tte-map-link {
+	margin-left: 0.4em;
+	font-size: 0.9em;
+}
+
+.tte-calendar-links {
+	font-size: 0.9em;
+}
+
+.tte-series-dates h3 {
+	font-size: 1em;
+	margin: 1em 0 0.3em;
+}
+
+/* Subscribe ------------------------------------------------------------------ */
+.tte-subscribe-links {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5em;
+}
+
+.tte-subscribe-url input {
+	width: 100%;
+	max-width: 36em;
+	font-size: 0.85em;
+}
