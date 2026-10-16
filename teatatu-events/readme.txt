@@ -133,6 +133,10 @@ While a list is managed it is read-only here — its tab shows the list with a l
 
 Always removes the agent role, capabilities, scheduled jobs and settings. With "Delete all Teatatu Events data when this plugin is uninstalled" ticked, also deletes every event (including trashed), series, link, feed configuration and Events term on every site. Teatatu News data is never touched.
 
+== Updates ==
+
+The plugin updates itself from the latest GitHub Release of the repository set in the settings (default `TeAtatu/Teatatu-events`), through the normal WordPress plugin updates screen, including "Enable auto-updates". It checks every 12 hours; **Check for Updates Now** in the settings checks straight away. Releases should attach the zip built by `tools/build-release.sh`; without one, GitHub's source zip is used and only its `teatatu-events/` folder is installed. For a private repository, add a GitHub token in the settings.
+
 == Frequently Asked Questions ==
 
 = Can it run alongside Teatatu News? =

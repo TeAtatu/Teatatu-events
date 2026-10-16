@@ -4,6 +4,16 @@
  * WordPress.org, so this plugs into the normal wp-admin "update available"
  * UI (and the native auto-update opt-in) using only wp_remote_get() and
  * core update-related filters — no bundled update library.
+ *
+ * How a release is installed:
+ *  - the latest GitHub Release of the configured repo is compared with the
+ *    installed version (tag "v1.0.1" or "1.0.1");
+ *  - the package is the release's attached `teatatu-events*.zip` asset (built
+ *    by tools/build-release.sh), else GitHub's source zip of the tag;
+ *  - the source zip holds the whole repository with the plugin in its
+ *    `teatatu-events/` subfolder, so only that subfolder is installed;
+ *  - with a GitHub token set (private repos), the token is sent with the
+ *    release lookup and the download.
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -54,7 +64,7 @@ function teatatu_events_fetch_latest_release( $force = false ) {
 	if ( ! $force ) {
 		$cached = get_site_transient( $cache_key );
 		if ( false !== $cached ) {
-			return $cached;
+			return ( is_array( $cached ) && ! empty( $cached['tte_failed'] ) ) ? false : $cached;
 		}
 	}
 
@@ -77,12 +87,10 @@ function teatatu_events_fetch_latest_release( $force = false ) {
 		)
 	);
 
-	if ( is_wp_error( $response ) || 200 !== (int) wp_remote_retrieve_response_code( $response ) ) {
-		return false;
-	}
-
-	$body = json_decode( wp_remote_retrieve_body( $response ), true );
-	if ( ! is_array( $body ) ) {
+	$body = ( ! is_wp_error( $response ) && 200 === (int) wp_remote_retrieve_response_code( $response ) ) ? json_decode( wp_remote_retrieve_body( $response ), true ) : null;
+	if ( ! is_array( $body ) || empty( $body['tag_name'] ) ) {
+		// No release yet, GitHub down or rate-limited: don't ask again for an hour.
+		set_site_transient( $cache_key, array( 'tte_failed' => 1 ), HOUR_IN_SECONDS );
 		return false;
 	}
 
@@ -90,49 +98,110 @@ function teatatu_events_fetch_latest_release( $force = false ) {
 	return $body;
 }
 
+/**
+ * Download URL for a release: its attached teatatu-events*.zip asset when
+ * there is one (with a token: the API asset URL, which accepts the token),
+ * else GitHub's source zip of the tag.
+ *
+ * @param array $release Release data.
+ * @return string
+ */
+function teatatu_events_release_package( $release ) {
+	$token = teatatu_events_get_option( 'teatatu_events_github_token', '' );
+	foreach ( (array) ( $release['assets'] ?? array() ) as $asset ) {
+		$name = (string) ( $asset['name'] ?? '' );
+		if ( preg_match( '/^teatatu-events.*\.zip$/i', $name ) ) {
+			if ( $token && ! empty( $asset['url'] ) ) {
+				return (string) $asset['url'];
+			}
+			if ( ! empty( $asset['browser_download_url'] ) ) {
+				return (string) $asset['browser_download_url'];
+			}
+		}
+	}
+	return isset( $release['zipball_url'] ) ? (string) $release['zipball_url'] : '';
+}
+
+/**
+ * The plugin's entry for the update_plugins transient.
+ *
+ * @param string $version Version offered.
+ * @param string $package Download URL ('' when up to date).
+ * @return object
+ */
+function teatatu_events_update_item( $version, $package ) {
+	return (object) array(
+		'id'           => 'https://github.com/' . teatatu_events_get_github_repo(),
+		'slug'         => 'teatatu-events',
+		'plugin'       => TEATATU_EVENTS_BASENAME,
+		'new_version'  => $version,
+		'url'          => 'https://github.com/' . teatatu_events_get_github_repo(),
+		'package'      => $package,
+		'tested'       => get_bloginfo( 'version' ),
+		'requires'     => teatatu_events_get_plugin_header( 'RequiresWP' ),
+		'requires_php' => teatatu_events_get_plugin_header( 'RequiresPHP' ),
+		'icons'        => array(),
+		'banners'      => array(),
+	);
+}
+
 add_filter( 'pre_set_site_transient_update_plugins', 'teatatu_events_check_for_update' );
 
 /**
- * Populates the update_plugins transient when a newer GitHub release exists.
+ * Populates the update_plugins transient: an update when a newer GitHub
+ * release exists, otherwise a "no update" entry — WordPress only offers the
+ * "Enable auto-updates" toggle for plugins listed in one or the other.
  *
  * @param object $transient Existing update_plugins transient.
  * @return object
  */
 function teatatu_events_check_for_update( $transient ) {
-	if ( empty( $transient->checked ) ) {
+	if ( ! is_object( $transient ) || empty( $transient->checked ) ) {
 		return $transient;
 	}
 
-	$release = teatatu_events_fetch_latest_release();
-	if ( ! $release || empty( $release['tag_name'] ) ) {
-		return $transient;
-	}
+	$release        = teatatu_events_fetch_latest_release();
+	$remote_version = $release ? ltrim( (string) $release['tag_name'], 'vV' ) : '';
+	$package        = $release ? teatatu_events_release_package( $release ) : '';
 
-	$remote_version = ltrim( $release['tag_name'], 'vV' );
-	if ( ! $remote_version || ! version_compare( $remote_version, TEATATU_EVENTS_VERSION, '>' ) ) {
-		return $transient;
-	}
-
-	$item = array(
-		'id'            => 'teatatu-events/teatatu-events.php',
-		'slug'          => 'teatatu-events',
-		'plugin'        => TEATATU_EVENTS_BASENAME,
-		'new_version'   => $remote_version,
-		'url'           => 'https://github.com/' . teatatu_events_get_github_repo(),
-		'package'       => isset( $release['zipball_url'] ) ? $release['zipball_url'] : '',
-		'tested'        => get_bloginfo( 'version' ),
-		'requires'      => teatatu_events_get_plugin_header( 'RequiresWP' ),
-		'requires_php'  => teatatu_events_get_plugin_header( 'RequiresPHP' ),
-		'icons'         => array(),
-		'banners'       => array(),
-	);
-
-	$transient->response[ TEATATU_EVENTS_BASENAME ] = (object) $item;
-	if ( isset( $transient->no_update[ TEATATU_EVENTS_BASENAME ] ) ) {
+	if ( $remote_version && $package && version_compare( $remote_version, TEATATU_EVENTS_VERSION, '>' ) ) {
+		$transient->response[ TEATATU_EVENTS_BASENAME ] = teatatu_events_update_item( $remote_version, $package );
 		unset( $transient->no_update[ TEATATU_EVENTS_BASENAME ] );
+	} else {
+		$transient->no_update[ TEATATU_EVENTS_BASENAME ] = teatatu_events_update_item( TEATATU_EVENTS_VERSION, '' );
+		unset( $transient->response[ TEATATU_EVENTS_BASENAME ] );
 	}
-
 	return $transient;
+}
+
+add_filter( 'http_request_args', 'teatatu_events_github_download_auth', 10, 2 );
+
+/**
+ * Sends the GitHub token with requests to GitHub's API and source-zip host
+ * (private repos), and asks the API for the file itself when downloading a
+ * release asset. Nothing is added without a token or for other hosts.
+ *
+ * @param array  $args Request arguments.
+ * @param string $url  URL.
+ * @return array
+ */
+function teatatu_events_github_download_auth( $args, $url ) {
+	$token = teatatu_events_get_option( 'teatatu_events_github_token', '' );
+	$host  = wp_parse_url( $url, PHP_URL_HOST );
+	if ( ! $token || ! in_array( $host, array( 'api.github.com', 'codeload.github.com' ), true ) ) {
+		return $args;
+	}
+	$repo = teatatu_events_get_github_repo();
+	$path = (string) wp_parse_url( $url, PHP_URL_PATH );
+	if ( 'api.github.com' === $host && 0 !== stripos( $path, '/repos/' . $repo . '/' ) ) {
+		return $args;
+	}
+	$args['headers']                  = isset( $args['headers'] ) && is_array( $args['headers'] ) ? $args['headers'] : array();
+	$args['headers']['Authorization'] = 'token ' . $token;
+	if ( preg_match( '#/releases/assets/\d+$#', $path ) ) {
+		$args['headers']['Accept'] = 'application/octet-stream';
+	}
+	return $args;
 }
 
 add_filter( 'plugins_api', 'teatatu_events_plugins_api', 10, 3 );
@@ -162,7 +231,7 @@ function teatatu_events_plugins_api( $result, $action, $args ) {
 		'homepage'      => 'https://github.com/' . teatatu_events_get_github_repo(),
 		'requires'      => teatatu_events_get_plugin_header( 'RequiresWP' ),
 		'requires_php'  => teatatu_events_get_plugin_header( 'RequiresPHP' ),
-		'download_link' => $release && ! empty( $release['zipball_url'] ) ? $release['zipball_url'] : '',
+		'download_link' => $release ? teatatu_events_release_package( $release ) : '',
 		'sections'      => array(
 			'description' => wp_kses_post( teatatu_events_get_plugin_header( 'Description' ) ),
 			'changelog'   => $changelog ? wpautop( wp_kses_post( $changelog ) ) : '<p>' . esc_html__( 'No changelog available.', 'teatatu-events' ) . '</p>',
@@ -175,35 +244,52 @@ function teatatu_events_plugins_api( $result, $action, $args ) {
 add_filter( 'upgrader_source_selection', 'teatatu_events_fix_source_dir', 10, 4 );
 
 /**
- * Renames the extracted GitHub zipball folder (`owner-repo-<sha>`) back to
- * `teatatu-events` so the update replaces the existing plugin folder cleanly.
+ * Makes the extracted package install as `teatatu-events/`:
+ *  - a built release zip already holds `teatatu-events/` (left as is);
+ *  - GitHub's source zip holds `owner-repo-<sha>/` with the whole
+ *    repository, and the plugin in its `teatatu-events/` subfolder — only
+ *    that subfolder is installed (README, SPEC etc. are left behind);
+ *  - any other folder whose top level is the plugin is renamed.
  *
- * @param string      $source        Path to the extracted, unrenamed source.
- * @param string      $remote_source Path to the parent temp directory.
- * @param WP_Upgrader $upgrader      Upgrader instance.
- * @param array       $hook_extra    Extra arguments, including 'plugin'.
- * @return string
+ * @param string|WP_Error $source        Path to the extracted source.
+ * @param string          $remote_source Path to the parent temp directory.
+ * @param WP_Upgrader     $upgrader      Upgrader instance.
+ * @param array           $hook_extra    Extra arguments, including 'plugin'.
+ * @return string|WP_Error
  */
 function teatatu_events_fix_source_dir( $source, $remote_source, $upgrader, $hook_extra = array() ) {
 	global $wp_filesystem;
 
-	if ( empty( $hook_extra['plugin'] ) || TEATATU_EVENTS_BASENAME !== $hook_extra['plugin'] ) {
-		return $source;
-	}
-	if ( ! $wp_filesystem ) {
+	if ( is_wp_error( $source ) || empty( $hook_extra['plugin'] ) || TEATATU_EVENTS_BASENAME !== $hook_extra['plugin'] || ! $wp_filesystem ) {
 		return $source;
 	}
 
+	$source  = trailingslashit( $source );
 	$desired = trailingslashit( $remote_source ) . 'teatatu-events/';
-	if ( trailingslashit( $source ) === $desired ) {
-		return $source;
-	}
 
-	if ( $wp_filesystem && $wp_filesystem->move( $source, $desired, true ) ) {
+	if ( $wp_filesystem->exists( $source . 'teatatu-events.php' ) ) {
+		$plugin_dir = $source;
+	} elseif ( $wp_filesystem->exists( $source . 'teatatu-events/teatatu-events.php' ) ) {
+		$plugin_dir = $source . 'teatatu-events/';
+	} else {
+		return new WP_Error( 'teatatu_events_bad_package', __( 'The downloaded update does not contain teatatu-events/teatatu-events.php. Nothing was changed.', 'teatatu-events' ) );
+	}
+	if ( $plugin_dir === $desired ) {
 		return $desired;
 	}
-
-	return $source;
+	// Move the plugin folder out to remote_source/teatatu-events/ (via a
+	// temporary name when it is nested inside a folder of the same name).
+	$staging = trailingslashit( $remote_source ) . 'tte-staging-' . wp_generate_password( 6, false ) . '/';
+	if ( ! $wp_filesystem->move( $plugin_dir, $staging, true ) ) {
+		return new WP_Error( 'teatatu_events_move_failed', __( 'Could not prepare the downloaded update.', 'teatatu-events' ) );
+	}
+	if ( $wp_filesystem->exists( $desired ) ) {
+		$wp_filesystem->delete( $desired, true );
+	}
+	if ( ! $wp_filesystem->move( $staging, $desired, true ) ) {
+		return new WP_Error( 'teatatu_events_move_failed', __( 'Could not prepare the downloaded update.', 'teatatu-events' ) );
+	}
+	return $desired;
 }
 
 add_action( 'admin_post_teatatu_events_check_updates', 'teatatu_events_handle_check_updates' );

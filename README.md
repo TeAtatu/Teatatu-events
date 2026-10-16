@@ -17,7 +17,7 @@ The plugin folder ([`teatatu-events/`](teatatu-events/)) is a complete, self-con
 - **Multisite**: network-wide listings on any sites you enable, **linked events** (show another site's event without copying it) and **cross-site duplicate removal**.
 - A draft-only **Events Agent** role for AI agents — see [`teatatu-events/MCP-GUIDE.md`](teatatu-events/MCP-GUIDE.md) and [`teatatu-events/SKILL.md`](teatatu-events/SKILL.md).
 - Only **standard WordPress tables**; images are never downloaded.
-- Self-updates from [GitHub Releases](https://github.com/TeAtatu/Teatatu-events/releases).
+- Self-updates from [GitHub Releases](https://github.com/TeAtatu/Teatatu-events/releases), including WordPress's automatic updates (see [Releasing an update](#releasing-an-update)).
 
 ## Getting started
 
@@ -63,6 +63,16 @@ With the [Teatatu Data](https://github.com/TeAtatu/Teatatu-data-management) plug
 ## Extending this plugin with AI
 
 [`prompt.md`](prompt.md) captures the plugin's architecture and invariants. Paste it into a fresh AI coding session along with the change you want, so updates stay consistent with how the plugin was built.
+
+## Releasing an update
+
+Installed sites check this repository's latest GitHub Release (every 12 hours, or straight away with **Check for Updates Now** in the plugin settings) and offer it as a normal WordPress plugin update, which the site's "Enable auto-updates" setting can install automatically.
+
+1. Set the new version in all three places: `Version:` in `teatatu-events/teatatu-events.php`, `TEATATU_EVENTS_VERSION` in the same file, and `Stable tag:` in `teatatu-events/readme.txt`. Add a changelog entry to `readme.txt`. Commit and push.
+2. Build the package: `sh teatatu-events/tools/build-release.sh`. It checks the three versions match and that nothing is uncommitted, then writes `teatatu-events-<version>.zip` (a single `teatatu-events/` folder) to the repository root. Zips are git-ignored.
+3. On GitHub: **Releases > Draft a new release**, tag `v<version>` on that commit, paste the changelog as the description (it becomes "View version details"), attach the zip, and **Publish release**.
+
+If no zip is attached, sites fall back to GitHub's source zip of the tag and install only its `teatatu-events/` folder. For a private repository, enter a GitHub token (read access to the repository's contents) in the plugin settings so sites can see and download releases.
 
 ## License
 
