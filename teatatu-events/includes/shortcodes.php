@@ -2,7 +2,7 @@
 /**
  * Shortcodes, in matching pairs: every display has a site version (this
  * site's events, plus linked events) and a network twin (every site's
- * events, Master Site only):
+ * events, only on sites enabled for network listings):
  *
  *   list · grid · latest · calendar · archive · subscribe
  *   [teatatu_events_{display}] / [teatatu_events_network_{display}]
@@ -320,11 +320,11 @@ function teatatu_events_render_shortcode( $raw, $display, $scope ) {
 		if ( ! is_multisite() ) {
 			return '';
 		}
-		if ( ! teatatu_events_is_master_site() ) {
+		if ( ! teatatu_events_is_network_display_site() ) {
 			if ( current_user_can( 'manage_options' ) ) {
-				$message = teatatu_events_get_master_site_id()
-					? __( "This shortcode only displays on the network's Master Site.", 'teatatu-events' )
-					: __( 'No Master Site has been set yet — configure one in Network Admin > Settings > Teatatu Events.', 'teatatu-events' );
+				$message = teatatu_events_get_network_display_site_ids()
+					? __( 'This shortcode only displays on sites enabled for network listings — add this site in Network Admin > Settings > Teatatu Events.', 'teatatu-events' )
+					: __( 'No site is enabled for network listings yet — choose them in Network Admin > Settings > Teatatu Events.', 'teatatu-events' );
 				return '<p class="tte-admin-notice">' . esc_html( $message ) . '</p>';
 			}
 			return '';

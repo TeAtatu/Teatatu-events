@@ -22,7 +22,7 @@ Teatatu Events adds an **Event** content type built for a community site (or a n
 * **Duplicate** any event as a new draft, or **Edit as draft**: stage changes to a published event and merge them in when published (with a field-by-field review if the live event changed meanwhile).
 * **Importers** — RSS/Atom, HTML pages, **iCal (.ics)** and **Schema.org JSON-LD**, with draft-first review, pending updates, venue/tag matching, a recognised-venue or neighbourhood filter, and "removed at source" handling.
 * **Front end** — list, grid, latest, month calendar, past-events archive and calendar-subscribe shortcodes, with visitor filters, add-to-calendar links, a details block and Schema.org Event JSON-LD on event pages, and iCal subscribe feeds.
-* **Multisite** — every shortcode has a network twin (Master Site), **linked events** (show another site's event without copying it), and **cross-site duplicate removal** when several sites import the same event.
+* **Multisite** — every shortcode has a network twin, shown on the sites you enable for network listings (any number), **linked events** (show another site's event without copying it), and **cross-site duplicate removal** when several sites import the same event.
 * **AI agents** — a draft-only **Events Agent** role and a REST interface documented in `MCP-GUIDE.md`.
 * Uses **only standard WordPress tables**. Images are never downloaded or stored.
 
@@ -33,7 +33,7 @@ Teatatu Events runs on its own or side by side with Teatatu News — they share 
 1. Copy the `teatatu-events` folder to `wp-content/plugins/`.
 2. Activate it (or **Network Activate** on multisite).
 3. Open **Teatatu Events** in the admin menu: add Venues and Event Tags, then events.
-4. Settings: **Settings > Teatatu Events** (single site) or **Network Admin > Settings > Teatatu Events** (multisite) — default event duration, series length, removed-at-source threshold, default country, date formats, Master Site, linked events, duplicate handling, GitHub updates.
+4. Settings: **Settings > Teatatu Events** (single site) or **Network Admin > Settings > Teatatu Events** (multisite) — default event duration, series length, removed-at-source threshold, default country, date formats, network listing sites, linked events, duplicate handling, GitHub updates.
 5. Sites that rely on timely imports should run a real server cron against `wp-cron.php` (and set `DISABLE_WP_CRON`), because WP-Cron only runs on page visits.
 
 == The Teatatu Events screen ==
@@ -62,7 +62,7 @@ The build fails if a street's neighbourhoods interleave along it. Rebuild after 
 
 == Shortcodes ==
 
-Matching pairs — the site version shows this site's events (plus linked events); the network version shows every site's events and only renders on the Master Site:
+Matching pairs — the site version shows this site's events (plus linked events); the network version shows every site's events and only renders on sites enabled under **Network Admin > Settings > Teatatu Events > Network listings** (tick as many sites as you like):
 
 * `[teatatu_events_list]` / `[teatatu_events_network_list]` — vertical list
 * `[teatatu_events_grid]` / `[teatatu_events_network_grid]` — card grid
@@ -79,7 +79,7 @@ Visitor filters and paging use per-shortcode query parameters, so several shortc
 
 * One event: `/wp-json/teatatu-events/v1/events/{id}/ics`
 * This site: `/wp-json/teatatu-events/v1/calendar.ics?neighbourhood=&tag=&category=&venue=&source=&linked=` — upcoming events plus the last 30 days, including linked events (with their source UID).
-* Network (Master Site): `/wp-json/teatatu-events/v1/network-calendar.ics` — same filters plus `exclude_sites`; duplicates appear once.
+* Network (on sites enabled for network listings): `/wp-json/teatatu-events/v1/network-calendar.ics` — same filters plus `exclude_sites`; duplicates appear once.
 
 An imported event's UID comes from its source identity, so the same real-world event has the same UID on every site and subscribers never see it twice.
 

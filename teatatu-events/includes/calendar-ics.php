@@ -240,14 +240,14 @@ function teatatu_events_rest_calendar_ics( WP_REST_Request $request ) {
 }
 
 /**
- * REST: the network subscribe feed (Master Site only).
+ * REST: the network subscribe feed (sites enabled for network listings only).
  *
  * @param WP_REST_Request $request Request.
  * @return WP_REST_Response|WP_Error
  */
 function teatatu_events_rest_network_calendar_ics( WP_REST_Request $request ) {
-	if ( ! is_multisite() || ! teatatu_events_is_master_site() ) {
-		return new WP_Error( 'teatatu_events_not_master_site', __( "This feed is only available on the network's Master Site.", 'teatatu-events' ), array( 'status' => 404 ) );
+	if ( ! is_multisite() || ! teatatu_events_is_network_display_site() ) {
+		return new WP_Error( 'teatatu_events_not_network_site', __( 'This feed is only available on sites enabled for network listings.', 'teatatu-events' ), array( 'status' => 404 ) );
 	}
 	$atts = teatatu_events_feed_atts_from_request( $request );
 	$key  = teatatu_events_cache_key( 'network', 'ics', $atts );

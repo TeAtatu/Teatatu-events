@@ -78,6 +78,7 @@ function teatatu_events_uninstall_cleanup_site( $delete_data ) {
 
 $teatatu_events_network_options = array(
 	'teatatu_events_master_site_id',
+	'teatatu_events_network_sites',
 	'teatatu_events_github_repo',
 	'teatatu_events_github_token',
 	'teatatu_events_delete_data_on_uninstall',

@@ -1,6 +1,6 @@
 <?php
 /**
- * Multisite helpers: Master Site resolution, and the cache-version counters
+ * Multisite helpers: which sites may show network listings, and the cache-version counters
  * used by the network aggregation, subscribe feeds and other cached output.
  *
  * Rather than registering and deleting individual transient keys, every
@@ -13,28 +13,67 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Gets the blog ID configured as the network's Master Site.
+ * Sites allowed to show network listings: the [teatatu_events_network_*]
+ * shortcodes, the network REST feed and the network calendar feed. A
+ * network setting holding an array of site IDs (in the order saved).
  *
- * @return int 0 if none has been configured yet.
+ * Installs from before this setting existed had a single "Master Site";
+ * until the setting is first saved, that site is the list.
+ *
+ * @return int[]
  */
-function teatatu_events_get_master_site_id() {
+function teatatu_events_get_network_display_site_ids() {
 	if ( ! is_multisite() ) {
-		return 0;
+		return array();
 	}
-	return (int) get_site_option( 'teatatu_events_master_site_id', 0 );
+	$ids = get_site_option( 'teatatu_events_network_sites', false );
+	if ( false === $ids ) {
+		$legacy = (int) get_site_option( 'teatatu_events_master_site_id', 0 );
+		$ids    = $legacy ? array( $legacy ) : array();
+	}
+	return array_values( array_unique( array_filter( array_map( 'absint', (array) $ids ) ) ) );
 }
 
 /**
- * Whether the current site is the configured Master Site.
+ * Saves the sites allowed to show network listings.
+ *
+ * @param int[] $ids Site IDs.
+ */
+function teatatu_events_set_network_display_site_ids( $ids ) {
+	$valid = array_map( 'intval', get_sites( array( 'fields' => 'ids', 'number' => 0 ) ) );
+	$ids   = array_values( array_intersect( array_unique( array_filter( array_map( 'absint', (array) $ids ) ) ), $valid ) );
+	update_site_option( 'teatatu_events_network_sites', $ids );
+	delete_site_option( 'teatatu_events_master_site_id' ); // Replaced by the list.
+	teatatu_events_bump_cache_version();
+}
+
+/**
+ * Whether the current site may show network listings.
+ *
+ * @return bool
+ */
+function teatatu_events_is_network_display_site() {
+	return is_multisite() && in_array( get_current_blog_id(), teatatu_events_get_network_display_site_ids(), true );
+}
+
+/**
+ * The first network display site (used where one site has to come first,
+ * e.g. the default duplicate priority). Kept under its old name.
+ *
+ * @return int 0 if none.
+ */
+function teatatu_events_get_master_site_id() {
+	$ids = teatatu_events_get_network_display_site_ids();
+	return $ids ? $ids[0] : 0;
+}
+
+/**
+ * Old name for teatatu_events_is_network_display_site().
  *
  * @return bool
  */
 function teatatu_events_is_master_site() {
-	if ( ! is_multisite() ) {
-		return false;
-	}
-	$master_id = teatatu_events_get_master_site_id();
-	return $master_id > 0 && get_current_blog_id() === $master_id;
+	return teatatu_events_is_network_display_site();
 }
 
 /**

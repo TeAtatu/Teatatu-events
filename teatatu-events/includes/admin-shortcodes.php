@@ -48,7 +48,7 @@ function teatatu_events_render_shortcodes_tab() {
 	);
 	?>
 	<h2><?php esc_html_e( 'Shortcodes', 'teatatu-events' ); ?></h2>
-	<p><?php esc_html_e( 'Shortcodes come in matching pairs: one for this site\'s events (plus any events linked from other sites), and a network version showing events from every site (Master Site only). Both versions take the same attributes and look the same.', 'teatatu-events' ); ?></p>
+	<p><?php esc_html_e( 'Shortcodes come in matching pairs: one for this site\'s events (plus any events linked from other sites), and a network version showing events from every site (only on sites enabled for network listings in Network Admin > Settings > Teatatu Events). Both versions take the same attributes and look the same.', 'teatatu-events' ); ?></p>
 	<table class="wp-list-table widefat fixed striped">
 		<thead><tr><th><?php esc_html_e( 'Display', 'teatatu-events' ); ?></th><th><?php esc_html_e( 'This site', 'teatatu-events' ); ?></th><th><?php esc_html_e( 'All sites on the network', 'teatatu-events' ); ?></th></tr></thead>
 		<tbody>
@@ -95,7 +95,7 @@ function teatatu_events_render_shortcodes_tab() {
 
 	<h3><?php esc_html_e( 'Calendar feed addresses', 'teatatu-events' ); ?></h3>
 	<p><?php esc_html_e( 'This site:', 'teatatu-events' ); ?> <code><?php echo esc_html( rest_url( 'teatatu-events/v1/calendar.ics' ) ); ?></code></p>
-	<?php if ( is_multisite() && teatatu_events_is_master_site() ) : ?>
+	<?php if ( is_multisite() && teatatu_events_is_network_display_site() ) : ?>
 		<p><?php esc_html_e( 'Network:', 'teatatu-events' ); ?> <code><?php echo esc_html( rest_url( 'teatatu-events/v1/network-calendar.ics' ) ); ?></code></p>
 	<?php endif; ?>
 	<p class="description"><?php esc_html_e( 'Add ?neighbourhood=, ?tag=, ?category=, ?venue= or ?source= to filter a feed.', 'teatatu-events' ); ?></p>

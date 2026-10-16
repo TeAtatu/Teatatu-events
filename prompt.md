@@ -41,7 +41,7 @@ Preserve these invariants unless the change explicitly asks to alter them:
 
 11. Caching uses version counters (teatatu_events_bump_cache_version()) — bump on any event, link or term change rather than tracking keys.
 
-12. Multisite: per-site registration on init; network-wide behaviour only via the Master Site (aggregation) or the link registry (linked events). Provision only the sites a Network Activate covers. Inside switch_to_blog() never call flush_rewrite_rules() — use teatatu_events_reset_rewrite_rules(). Admin forms post to admin_url('admin-post.php') (there is no network admin-post.php).
+12. Multisite: per-site registration on init; network-wide behaviour only via the network listing sites (aggregation; a network option holding an array of site IDs) or the link registry (linked events). Provision only the sites a Network Activate covers. Inside switch_to_blog() never call flush_rewrite_rules() — use teatatu_events_reset_rewrite_rules(). Admin forms post to admin_url('admin-post.php') (there is no network admin-post.php).
 
 13. Security baseline: nonces on every form/handler; narrowest current_user_can(); verify an ID is really ours (get_post_type()/taxonomy) before acting; never pass post_type to wp_update_post for an existing ID; escape all output, sanitise all input; DOM selectors are sanitised to a closed character set before XPath interpolation; third-party URLs are fetched with wp_safe_remote_get() and a size cap.
 
@@ -60,7 +60,7 @@ Ask before changing: the agent capability boundary, the standard-tables rule, li
 |---|---|
 | `teatatu-events.php` | Header, constants, activation/deactivation, per-site provisioning, new-site hook, rewrite reset |
 | `includes/capabilities.php` | Roles/caps, version-gated re-sync, curated-term guard |
-| `includes/multisite.php` | Master Site, cache versions, site info |
+| `includes/multisite.php` | Network listing sites (array), cache versions, site info |
 | `includes/settings.php` | Settings page and option helpers (`teatatu_events_setting()`) |
 | `includes/post-type.php` | All post types, event details block, external redirect, JSON-LD, draft-copy exclusion |
 | `includes/taxonomies.php` | Five taxonomies and term meta |

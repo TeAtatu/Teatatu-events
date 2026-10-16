@@ -562,7 +562,7 @@ function teatatu_events_rest_public_events( WP_REST_Request $request ) {
 }
 
 /**
- * Network feed (Master Site only).
+ * Network feed (sites enabled for network listings only).
  *
  * @param WP_REST_Request $request Request.
  * @return WP_REST_Response|WP_Error
@@ -571,8 +571,8 @@ function teatatu_events_rest_network_feed( WP_REST_Request $request ) {
 	if ( ! is_multisite() ) {
 		return new WP_Error( 'teatatu_events_not_multisite', __( 'This endpoint is only available on a multisite network.', 'teatatu-events' ), array( 'status' => 404 ) );
 	}
-	if ( ! teatatu_events_is_master_site() ) {
-		return new WP_Error( 'teatatu_events_not_master_site', __( "This endpoint only responds on the network's configured Master Site.", 'teatatu-events' ), array( 'status' => 404 ) );
+	if ( ! teatatu_events_is_network_display_site() ) {
+		return new WP_Error( 'teatatu_events_not_network_site', __( 'This endpoint only responds on sites enabled for network listings.', 'teatatu-events' ), array( 'status' => 404 ) );
 	}
 	$atts   = teatatu_events_rest_atts( $request );
 	$result = teatatu_events_get_items( $atts, 'network' );

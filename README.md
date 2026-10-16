@@ -14,7 +14,7 @@ The plugin folder ([`teatatu-events/`](teatatu-events/)) is a complete, self-con
 - **Duplicate** and **Edit as draft** (stage changes to a published event, then merge).
 - **Importers** for RSS/Atom, HTML pages, iCal and Schema.org JSON-LD — draft-first, with pending updates, venue matching, a recognised-venue/neighbourhood filter and "removed at source" handling.
 - **Twelve shortcodes** in site/network pairs (list, grid, latest, calendar, archive, subscribe) with visitor filters, plus iCal subscribe feeds, add-to-calendar links and Schema.org Event JSON-LD.
-- **Multisite**: network-wide listings on a Master Site, **linked events** (show another site's event without copying it) and **cross-site duplicate removal**.
+- **Multisite**: network-wide listings on any sites you enable, **linked events** (show another site's event without copying it) and **cross-site duplicate removal**.
 - A draft-only **Events Agent** role for AI agents — see [`teatatu-events/MCP-GUIDE.md`](teatatu-events/MCP-GUIDE.md) and [`teatatu-events/SKILL.md`](teatatu-events/SKILL.md).
 - Only **standard WordPress tables**; images are never downloaded.
 - Self-updates from [GitHub Releases](https://github.com/TeAtatu/Teatatu-events/releases).

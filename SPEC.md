@@ -335,8 +335,8 @@ That's six of each, twelve in total. Rules that keep the pairs in step:
 - **One implementation per display.** Each pair calls one render function with a `scope` of `site` or `network`. The only thing `scope` changes is where the events come from: `teatatu_events_query_items()` for this site, and `teatatu_events_get_network_feed_items()` for the network. Filtering, sorting, grouping, markup and CSS are shared, so a new attribute or display added to one scope is automatically in the other.
 - **Same attributes.** Every attribute below works in both scopes. Two are network-only: `exclude_sites` (comma list of site IDs to leave out) and `site_label` (show which site each event is from). The site versions ignore them.
 - **Linked events** (§3.6) appear only in the *site* versions, alongside local events. The network versions skip links because they already show the source event. Attribute `linked` = `include` (default when the site setting is on) · `exclude` · `only`.
-- **Network shortcodes only render on the Master Site**, as in News. Elsewhere they show an admin-only notice and output nothing for visitors.
-- **Links go to the event's home site.** A network card links to the event's page (or Read More URL) on the site it belongs to, never a copy on the Master Site.
+- **Network shortcodes only render on sites enabled for network listings.** A network setting, **Network listings**, holds an array of site IDs (`teatatu_events_network_sites`), chosen with a checkbox per site; any number of sites can be ticked, and each shows the same network-wide events. Elsewhere the network shortcodes show an admin-only notice and output nothing for visitors. Installs from before this setting had a single Master Site (`teatatu_events_master_site_id`); until the setting is first saved that site is the list, and saving retires the old option.
+- **Links go to the event's home site.** A network card links to the event's page (or Read More URL) on the site it belongs to, never a copy on the site showing the listing.
 - **Cross-site filtering is by slug.** On the network, `category`, `tag`, `source`, `venue` and `neighbourhood` match term slugs on each site. The three neighbourhood terms are seeded with the same slugs on every site, so neighbourhood filters work across the whole network. Visitor filter dropdowns on a network shortcode list the combined terms from all sites, merged by slug.
 - **Network archive paging:** page *n* fetches up to *n* × `count` past events from each site, then merges and slices them. It's cached like the other network queries. Deep pages on large networks cost more, so `count` is capped at 50.
 - **Network subscribe feed:** `[teatatu_events_network_subscribe]` points at `GET /teatatu-events/v1/network-calendar.ics` (§5.4).
@@ -364,7 +364,7 @@ For external events, the card links straight to the Read More URL, and the local
 - Google Calendar link (`calendar.google.com/calendar/render?action=TEMPLATE…`).
 - Outlook.com link.
 - **Subscribe feed:** `GET /wp-json/teatatu-events/v1/calendar.ics` lists all published upcoming events (plus the last 30 days), filterable by `?neighbourhood=&category=&tag=&venue=&source=`, so each neighbourhood can have its own calendar subscription. Linked events (§3.6) are included with their source `UID`, unless `?linked=exclude` is set. People can subscribe to it in Google, Apple or Outlook calendar. A `[teatatu_events_subscribe]` shortcode shows the subscribe/webcal links. Responses are cached and the cache is cleared whenever an event changes.
-- **Network subscribe feed:** `GET /wp-json/teatatu-events/v1/network-calendar.ics`, the network twin of the subscribe feed. It's served by the Master Site only, has the same filters plus `exclude_sites`, and each event's `UID` and `URL` point at its home site, so subscribers never see duplicates.
+- **Network subscribe feed:** `GET /wp-json/teatatu-events/v1/network-calendar.ics`, the network twin of the subscribe feed. It's served only by sites enabled for network listings (404 elsewhere), has the same filters plus `exclude_sites`, and each event's `UID` and `URL` point at its home site, so subscribers never see duplicates.
 - In all `.ics` output, `LOCATION` = Location, Room, Address.
 
 ### 5.5 Removing duplicates across sites
@@ -389,7 +389,7 @@ Two events are duplicates if their external keys match, or, when the fuzzy setti
 - Duplicate removal never changes or deletes anything. It only affects what is displayed. Each site's own (site-scope) listings still show its own copy.
 
 **Which copy is shown (the canonical copy):**
-1. The copy on the site highest in the **Duplicate priority** network setting (an ordered list of sites; default: Master Site first, then by site ID).
+1. The copy on the site highest in the **Duplicate priority** network setting (an ordered list of sites; unlisted sites follow: the network listing sites in their saved order, then by site ID).
 2. On a tie, the most recently updated copy.
 
 The card links to the canonical copy. If some copies have newer information than the canonical one (e.g. one site has already imported a cancellation), the **newest status and dates** are shown, so a stale copy never hides a cancellation. With `site_label="true"`, the card reads "From *Site A* · also on *Site B*, *Site C*". Network REST items include `also_on: [{site_id, name, url}]`.
@@ -528,7 +528,7 @@ Every automated feed (RSS, HTML, iCal, JSON-LD) has an **"Only import events at 
 - Link management (editors only, `manage_teatatu_events_links`): `GET /teatatu-events/v1/links`, `POST /teatatu-events/v1/links` (`site_id` + `event_id` or `series_id`, optional `note`), `DELETE /teatatu-events/v1/links/{id}`, and `GET /teatatu-events/v1/linkable?search=&from=&to=` (the network browse list). All return 403 if the site setting is off.
 - `GET /teatatu-events/v1/events/{id}/ics`, per-event calendar file.
 - `GET /teatatu-events/v1/calendar.ics`, subscribe feed (§5.4).
-- `GET /teatatu-events/v1/network-feed`, network aggregation (Master Site only). It takes the same filter params as `GET /teatatu-events/v1/events` (`when`, `from`, `to`, `venue`, `neighbourhood`, `tag`, `category`, `source`, `per_page`, `page`) plus `exclude_sites`, and shares `teatatu_events_get_network_feed_items()` with the network shortcodes.
+- `GET /teatatu-events/v1/network-feed`, network aggregation (sites enabled for network listings only). It takes the same filter params as `GET /teatatu-events/v1/events` (`when`, `from`, `to`, `venue`, `neighbourhood`, `tag`, `category`, `source`, `per_page`, `page`) plus `exclude_sites`, and shares `teatatu_events_get_network_feed_items()` with the network shortcodes.
 - `GET /teatatu-events/v1/network-calendar.ics`, network subscribe feed (§5.4).
 - Series aren't in REST, so agents create single events. See Q4 in §12.
 - **`teatatu-events/MCP-GUIDE.md`** ships with the plugin. It is the agent-facing reference for all of the above: auth, field schemas, workflows, suggested MCP tool definitions and error handling. `SKILL.md` stays as the short workflow and points to it. Any REST change must update both (§11).
@@ -545,7 +545,7 @@ Editor/Administrator: all Events caps, including `manage_teatatu_events_venues`,
 
 ## 9. Settings
 
-On top of News's (Master Site, GitHub repo/token, delete-on-uninstall):
+On top of News's (GitHub repo/token, delete-on-uninstall) — with News's single Master Site replaced by **Network listings**, an array of the sites allowed to show network listings:
 - Default event duration (2 h)
 - Default upcoming dates kept per series (12, maximum 12)
 - Hide cancelled events from lists by default (off)

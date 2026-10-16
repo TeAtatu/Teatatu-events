@@ -68,7 +68,8 @@ function teatatu_events_external_key( $kind, $identity ) {
 
 /**
  * Priority rank of each site for choosing the canonical copy (lower wins):
- * the Duplicate priority list first, then the Master Site, then by site ID.
+ * the Duplicate priority list first, then the network display sites (in
+ * their saved order), then by site ID.
  *
  * @return int[] site ID => rank
  */
@@ -85,9 +86,10 @@ function teatatu_events_site_priority_ranks() {
 			$ranks[ $id ] = $rank++;
 		}
 	}
-	$master = teatatu_events_get_master_site_id();
-	if ( $master && ! isset( $ranks[ $master ] ) ) {
-		$ranks[ $master ] = $rank++;
+	foreach ( teatatu_events_get_network_display_site_ids() as $id ) {
+		if ( ! isset( $ranks[ $id ] ) ) {
+			$ranks[ $id ] = $rank++;
+		}
 	}
 	foreach ( teatatu_events_network_site_ids() as $id ) {
 		if ( ! isset( $ranks[ $id ] ) ) {

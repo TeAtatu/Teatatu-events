@@ -142,7 +142,7 @@ function teatatu_events_render_settings_page() {
 	$github_repo         = teatatu_events_get_option( 'teatatu_events_github_repo', 'TeAtatu/Teatatu-events' );
 	$github_token_is_set = (bool) teatatu_events_get_option( 'teatatu_events_github_token', '' );
 	$delete_on_uninstall = (bool) teatatu_events_get_option( 'teatatu_events_delete_data_on_uninstall', false );
-	$master_site_id      = teatatu_events_get_master_site_id();
+	$network_sites       = teatatu_events_get_network_display_site_ids();
 	// Always the plain (non-network) admin-post.php, even under Network
 	// Admin: wp-admin/network/admin-post.php does not exist in core.
 	$post_url = admin_url( 'admin-post.php' );
@@ -206,17 +206,19 @@ function teatatu_events_render_settings_page() {
 				<h2><?php esc_html_e( 'Network', 'teatatu-events' ); ?></h2>
 				<table class="form-table">
 					<tr>
-						<th><label for="tte_master_site"><?php esc_html_e( 'Master Site', 'teatatu-events' ); ?></label></th>
+						<th><?php esc_html_e( 'Network listings', 'teatatu-events' ); ?></th>
 						<td>
-							<select id="tte_master_site" name="master_site_id">
-								<option value="0"><?php esc_html_e( '— None —', 'teatatu-events' ); ?></option>
+							<input type="hidden" name="network_sites_sent" value="1" />
+							<fieldset>
+								<legend class="screen-reader-text"><?php esc_html_e( 'Sites that can show network listings', 'teatatu-events' ); ?></legend>
 								<?php foreach ( get_sites( array( 'number' => 500 ) ) as $site ) : ?>
-									<option value="<?php echo esc_attr( $site->blog_id ); ?>" <?php selected( $master_site_id, (int) $site->blog_id ); ?>>
-										<?php echo esc_html( $site->blogname ? $site->blogname : $site->domain . $site->path ); ?> (<?php echo esc_html( $site->domain . $site->path ); ?>)
-									</option>
+									<label style="display:block;">
+										<input type="checkbox" name="network_sites[]" value="<?php echo esc_attr( $site->blog_id ); ?>" <?php checked( in_array( (int) $site->blog_id, $network_sites, true ) ); ?> />
+										<?php echo esc_html( $site->blogname ? $site->blogname : $site->domain . $site->path ); ?> <span class="description">(<?php echo esc_html( $site->domain . $site->path ); ?>, ID <?php echo esc_html( $site->blog_id ); ?>)</span>
+									</label>
 								<?php endforeach; ?>
-							</select>
-							<p class="description"><?php esc_html_e( 'The site where the [teatatu_events_network_*] shortcodes and the network REST/iCal endpoints produce output.', 'teatatu-events' ); ?></p>
+							</fieldset>
+							<p class="description"><?php esc_html_e( 'Sites where the [teatatu_events_network_*] shortcodes and the network REST/iCal feeds produce output — tick as many as you like. Every ticked site shows the same events from across the network. On other sites the network shortcodes show nothing to visitors (admins see a note).', 'teatatu-events' ); ?></p>
 						</td>
 					</tr>
 					<tr>
@@ -235,7 +237,7 @@ function teatatu_events_render_settings_page() {
 					<tr>
 						<th><label for="tte_dedupe_priority"><?php esc_html_e( 'Duplicate priority', 'teatatu-events' ); ?></label></th>
 						<td><input type="text" id="tte_dedupe_priority" name="dedupe_priority" class="regular-text" value="<?php echo esc_attr( $s( 'dedupe_priority' ) ); ?>" placeholder="1, 4, 2" />
-						<p class="description"><?php esc_html_e( 'Site IDs, highest priority first. The copy from the highest-priority site is shown. Unlisted sites follow, Master Site first, then by site ID.', 'teatatu-events' ); ?></p></td>
+						<p class="description"><?php esc_html_e( 'Site IDs, highest priority first. The copy from the highest-priority site is shown. Unlisted sites follow: the network listing sites first, then by site ID.', 'teatatu-events' ); ?></p></td>
 					</tr>
 				</table>
 			<?php endif; ?>
@@ -317,8 +319,8 @@ function teatatu_events_handle_save_settings() {
 		$values['dedupe_fuzzy']    = ! empty( $_POST['dedupe_fuzzy'] ) ? 1 : 0;
 		$values['dedupe_manual']   = ! empty( $_POST['dedupe_manual'] ) ? 1 : 0;
 		$values['dedupe_priority'] = $priority;
-		if ( isset( $_POST['master_site_id'] ) ) {
-			update_site_option( 'teatatu_events_master_site_id', absint( $_POST['master_site_id'] ) );
+		if ( ! empty( $_POST['network_sites_sent'] ) ) {
+			teatatu_events_set_network_display_site_ids( array_map( 'absint', (array) wp_unslash( $_POST['network_sites'] ?? array() ) ) );
 		}
 	}
 	teatatu_events_save_settings( $values );
