@@ -1,5 +1,7 @@
 #!/bin/sh
-# Builds the zip to attach to a GitHub Release, so installs update cleanly.
+# Builds the zips to attach to a GitHub Release, so installs update cleanly:
+# the plugin (teatatu-events-<version>.zip) and, when the folder exists, the
+# theme (teatatu-events-theme-<version>.zip).
 #
 # Usage (from the repository root or anywhere inside it):
 #   sh teatatu-events/tools/build-release.sh
@@ -29,8 +31,19 @@ if [ -z "$header" ] || [ "$header" != "$constant" ] || [ "$header" != "$stable" 
 	exit 1
 fi
 
-if [ -n "$(git status --porcelain -- "$plugin")" ]; then
-	echo "The $plugin/ folder has uncommitted changes. Commit them first (the zip is built from the last commit)." >&2
+theme="teatatu-events-theme"
+if [ -d "$theme" ]; then
+	t_header=$(sed -n 's/^Version: *//p' "$theme/style.css" | head -1 | tr -d '\r ')
+	t_constant=$(sed -n "s/^define( 'TTEV_THEME_VERSION', '\([^']*\)' );.*/\1/p" "$theme/functions.php" | head -1)
+	t_stable=$(sed -n 's/^Stable tag: *//p' "$theme/readme.txt" | head -1 | tr -d '\r ')
+	if [ -z "$t_header" ] || [ "$t_header" != "$t_constant" ] || [ "$t_header" != "$t_stable" ]; then
+		echo "Theme version mismatch: style.css '$t_header', TTEV_THEME_VERSION '$t_constant', readme Stable tag '$t_stable'." >&2
+		exit 1
+	fi
+fi
+
+if [ -n "$(git status --porcelain -- "$plugin" ${theme:+"$theme"})" ]; then
+	echo "The plugin or theme folder has uncommitted changes. Commit them first (the zips are built from the last commit)." >&2
 	exit 1
 fi
 
@@ -39,4 +52,10 @@ rm -f "$out"
 git archive --format=zip --prefix="teatatu-events/" -o "$out" "HEAD:$plugin"
 
 echo "Built $out"
-echo "Next: create GitHub release tag v$header on this commit ($(git rev-parse --short HEAD)), attach the zip, publish."
+if [ -d "$theme" ]; then
+	t_out="$root/teatatu-events-theme-$t_header.zip"
+	rm -f "$t_out"
+	git archive --format=zip --prefix="teatatu-events-theme/" -o "$t_out" "HEAD:$theme"
+	echo "Built $t_out"
+fi
+echo "Next: create GitHub release tag v$header on this commit ($(git rev-parse --short HEAD)), attach the zip(s), publish."

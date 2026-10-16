@@ -123,6 +123,17 @@ Administrator/Editor: all event capabilities plus `manage_teatatu_events_{source
 
 `teatatu_events_rss_cron_tick`, `_html_`, `_ical_`, `_ld_cron_tick` (every 5 minutes; each feed still runs on its own cadence), `teatatu_events_series_cron_tick` (hourly), `teatatu_events_links_cron_tick` (daily, only where linked events are on), plus one-off batch jobs for duplicate-key backfill and neighbourhood re-resolution. Every hook is re-checked on `init`.
 
+== Themes: front-end query API ==
+
+The plugin works with any theme (shortcodes, and its own details box on event pages). A theme that lays events out itself — like Teatatu Events Theme in this repository — uses `includes/front-end.php`:
+
+* **URL filters on `/events/` and every event taxonomy page**, applied to the main query: `when` (upcoming, today, tomorrow, weekend, week, month, past, all), `from`/`to` (YYYY-MM-DD), `q`, `neighbourhood`, `category`, `kind` (Event Tags — not `tag`, which is WordPress's blog-tag query variable), `venue`, `source`, `free`, and `view=calendar` with `month=YYYY-MM` (loads the whole month). Upcoming is the default, soonest first; past is newest first. Draft copies, hidden or shadowed linked events and (per the setting) cancelled events are left out; linked events are included when the site shows them.
+* `teatatu_events_current_filters()`, `teatatu_events_active_filters()`, `teatatu_events_when_options()`, `teatatu_events_calendar_month()` — for forms and filter chips.
+* `teatatu_events_item_from_post( $post )` — the normalised item for any post an events query returns (local or linked). Items include `group`, shared by the dates of one series or one imported event page.
+* `teatatu_events_search( $filters, $page, $per_page )` — the same filters for theme sections ("this weekend", "more at this venue").
+* `teatatu_events_calendar_urls( $item )`, `teatatu_events_feed_url( $filters )`, `teatatu_events_subscribe_urls( $feed, $name )` — add-to-calendar and subscribe links as data.
+* Filter `teatatu_events_content_details` — return false to turn off the plugin's details box on event pages.
+
 == Teatatu Data (optional) ==
 
 When the Teatatu Data plugin is active and a steward switches a list on in its **Connections** tab, Teatatu Data keeps that list here up to date on every site: **Neighbourhoods** and **street rules**, **Venues**, **Sources**, **Event Tags** and **Categories**. Existing terms are linked (term meta `teatatu_data_ref`), not replaced, so events, URLs, shortcodes and REST are unchanged.

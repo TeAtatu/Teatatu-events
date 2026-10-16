@@ -261,14 +261,16 @@ function teatatu_events_rest_network_calendar_ics( WP_REST_Request $request ) {
 }
 
 /**
- * Add-to-calendar links (.ics, Google, Outlook) for one item.
+ * Add-to-calendar URLs for one item: its .ics file, and Google and Outlook
+ * "add event" links. Empty for events with no start or cancelled ones.
+ * Themes use this to style their own buttons.
  *
  * @param array $item Normalised item.
- * @return string HTML.
+ * @return array {ics, google, outlook} (empty array when not offered).
  */
-function teatatu_events_render_calendar_links( $item ) {
+function teatatu_events_calendar_urls( $item ) {
 	if ( empty( $item['start'] ) || 'cancelled' === $item['status'] ) {
-		return '';
+		return array();
 	}
 	$site_url = ! empty( $item['home_site']['url'] ) ? $item['home_site']['url'] : home_url();
 	$ics_url  = trailingslashit( $site_url ) . 'wp-json/teatatu-events/v1/events/' . (int) $item['id'] . '/ics';
@@ -282,36 +284,76 @@ function teatatu_events_render_calendar_links( $item ) {
 		$o_end   = gmdate( 'Y-m-d\TH:i:s\Z', $item['end'] );
 	}
 	$details = wp_strip_all_tags( $item['excerpt'] ) . ( $item['link'] ? "\n" . $item['link'] : '' );
-	$google  = add_query_arg(
-		array(
-			'action'   => 'TEMPLATE',
-			'text'     => rawurlencode( $item['title'] ),
-			'dates'    => $g_dates,
-			'details'  => rawurlencode( $details ),
-			'location' => rawurlencode( $item['place']['line'] ),
-		),
-		'https://calendar.google.com/calendar/render'
-	);
-	$outlook = add_query_arg(
-		array_filter(
+	return array(
+		'ics'     => $ics_url,
+		'google'  => add_query_arg(
 			array(
-				'path'     => '/calendar/action/compose',
-				'rru'      => 'addevent',
-				'subject'  => rawurlencode( $item['title'] ),
-				'startdt'  => rawurlencode( $o_start ),
-				'enddt'    => rawurlencode( $o_end ),
-				'body'     => rawurlencode( $details ),
+				'action'   => 'TEMPLATE',
+				'text'     => rawurlencode( $item['title'] ),
+				'dates'    => $g_dates,
+				'details'  => rawurlencode( $details ),
 				'location' => rawurlencode( $item['place']['line'] ),
-				'allday'   => $item['all_day'] ? 'true' : '',
-			)
+			),
+			'https://calendar.google.com/calendar/render'
 		),
-		'https://outlook.live.com/calendar/0/deeplink/compose'
+		'outlook' => add_query_arg(
+			array_filter(
+				array(
+					'path'     => '/calendar/action/compose',
+					'rru'      => 'addevent',
+					'subject'  => rawurlencode( $item['title'] ),
+					'startdt'  => rawurlencode( $o_start ),
+					'enddt'    => rawurlencode( $o_end ),
+					'body'     => rawurlencode( $details ),
+					'location' => rawurlencode( $item['place']['line'] ),
+					'allday'   => $item['all_day'] ? 'true' : '',
+				)
+			),
+			'https://outlook.live.com/calendar/0/deeplink/compose'
+		),
 	);
+}
+
+/**
+ * Add-to-calendar links (.ics, Google, Outlook) for one item.
+ *
+ * @param array $item Normalised item.
+ * @return string HTML.
+ */
+function teatatu_events_render_calendar_links( $item ) {
+	$urls = teatatu_events_calendar_urls( $item );
+	if ( ! $urls ) {
+		return '';
+	}
 	return '<span class="tte-calendar-links">'
-		. '<a href="' . esc_url( $ics_url ) . '">' . esc_html__( 'Add to calendar (.ics)', 'teatatu-events' ) . '</a> · '
-		. '<a href="' . esc_url( $google ) . '" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Google', 'teatatu-events' ) . '</a> · '
-		. '<a href="' . esc_url( $outlook ) . '" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Outlook', 'teatatu-events' ) . '</a>'
+		. '<a href="' . esc_url( $urls['ics'] ) . '">' . esc_html__( 'Add to calendar (.ics)', 'teatatu-events' ) . '</a> · '
+		. '<a href="' . esc_url( $urls['google'] ) . '" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Google', 'teatatu-events' ) . '</a> · '
+		. '<a href="' . esc_url( $urls['outlook'] ) . '" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Outlook', 'teatatu-events' ) . '</a>'
 		. '</span>';
+}
+
+/**
+ * Subscribe URLs for a calendar feed: webcal (Apple and most apps),
+ * Google, Outlook, and the plain https address.
+ *
+ * @param string $feed_url https feed URL.
+ * @param string $name     Calendar name.
+ * @return array {webcal, google, outlook, url}
+ */
+function teatatu_events_subscribe_urls( $feed_url, $name ) {
+	$webcal = preg_replace( '#^https?://#', 'webcal://', $feed_url );
+	return array(
+		'webcal'  => $webcal,
+		'google'  => 'https://calendar.google.com/calendar/r?cid=' . rawurlencode( $webcal ),
+		'outlook' => add_query_arg(
+			array(
+				'url'  => rawurlencode( $feed_url ),
+				'name' => rawurlencode( $name ),
+			),
+			'https://outlook.live.com/calendar/0/addfromweb'
+		),
+		'url'     => $feed_url,
+	);
 }
 
 /**

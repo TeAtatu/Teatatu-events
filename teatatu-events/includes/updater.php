@@ -110,7 +110,8 @@ function teatatu_events_release_package( $release ) {
 	$token = teatatu_events_get_option( 'teatatu_events_github_token', '' );
 	foreach ( (array) ( $release['assets'] ?? array() ) as $asset ) {
 		$name = (string) ( $asset['name'] ?? '' );
-		if ( preg_match( '/^teatatu-events.*\.zip$/i', $name ) ) {
+		// The plugin's zip (teatatu-events.zip / teatatu-events-1.2.0.zip), never the theme's.
+		if ( preg_match( '/^teatatu-events(-\d[\w.]*)?\.zip$/i', $name ) ) {
 			if ( $token && ! empty( $asset['url'] ) ) {
 				return (string) $asset['url'];
 			}

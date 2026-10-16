@@ -689,6 +689,22 @@ function teatatu_events_term_list( $post_id, $taxonomy ) {
 }
 
 /**
+ * The group an event's dates share ('' for a one-off): its series, or the
+ * sessions a feed imported from one event page.
+ *
+ * @param int $id Event ID.
+ * @return string
+ */
+function teatatu_events_item_group( $id ) {
+	$series = (int) get_post_meta( $id, teatatu_events_mk( 'series_id' ), true );
+	if ( $series ) {
+		return 'series-' . $series;
+	}
+	$import = (string) get_post_meta( $id, teatatu_events_mk( 'import_group' ), true );
+	return '' !== $import ? 'import-' . md5( $import ) : '';
+}
+
+/**
  * Builds the plain-array representation of an event used by every
  * renderer, the REST API, network aggregation and iCal output.
  *
@@ -735,6 +751,8 @@ function teatatu_events_normalize_item( $post ) {
 		'price'         => $fields['price'],
 		'is_free'       => $fields['is_free'],
 		'series_id'     => (int) get_post_meta( $id, teatatu_events_mk( 'series_id' ), true ),
+		// Dates that belong together: a series, or the sessions imported from one event page.
+		'group'         => teatatu_events_item_group( $id ),
 		'external_key'  => $ext_key,
 		'fuzzy_key'     => (string) get_post_meta( $id, teatatu_events_mk( 'fuzzy_key' ), true ),
 		'imported'      => (bool) get_post_meta( $id, teatatu_events_mk( 'feed_id' ), true ),

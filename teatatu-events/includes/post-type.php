@@ -99,6 +99,10 @@ function teatatu_events_filter_the_content( $content ) {
 	if ( ! is_singular( 'teatatu_event' ) || ! in_the_loop() || ! is_main_query() ) {
 		return $content;
 	}
+	// A theme with its own event layout (e.g. Teatatu Events Theme) turns this off.
+	if ( ! apply_filters( 'teatatu_events_content_details', true ) ) {
+		return $content;
+	}
 	teatatu_events_enqueue_style();
 	$post_id = get_the_ID();
 	$item    = teatatu_events_normalize_item( get_post( $post_id ) );
