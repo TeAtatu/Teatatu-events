@@ -105,19 +105,29 @@ function teatatu_events_render_admin_page() {
 				teatatu_events_render_series_tab();
 				break;
 			case 'venues':
-				teatatu_events_render_venues_tab();
+				if ( ! teatatu_events_render_managed_list( 'teatatu_events_venue' ) ) {
+					teatatu_events_render_venues_tab();
+				}
 				break;
 			case 'neighbourhoods':
-				teatatu_events_render_neighbourhoods_tab();
+				if ( ! teatatu_events_render_managed_list( 'teatatu_events_neighbourhood' ) ) {
+					teatatu_events_render_neighbourhoods_tab();
+				}
 				break;
 			case 'tags':
-				teatatu_events_render_term_tab( 'teatatu_events_tag' );
+				if ( ! teatatu_events_render_managed_list( 'teatatu_events_tag' ) ) {
+					teatatu_events_render_term_tab( 'teatatu_events_tag' );
+				}
 				break;
 			case 'sources':
-				teatatu_events_render_term_tab( 'teatatu_events_source' );
+				if ( ! teatatu_events_render_managed_list( 'teatatu_events_source' ) ) {
+					teatatu_events_render_term_tab( 'teatatu_events_source' );
+				}
 				break;
 			case 'categories':
-				teatatu_events_render_term_tab( 'teatatu_events_category' );
+				if ( ! teatatu_events_render_managed_list( 'teatatu_events_category' ) ) {
+					teatatu_events_render_term_tab( 'teatatu_events_category' );
+				}
 				break;
 			case 'pending':
 				teatatu_events_render_pending_tab();

@@ -123,6 +123,12 @@ Administrator/Editor: all event capabilities plus `manage_teatatu_events_{source
 
 `teatatu_events_rss_cron_tick`, `_html_`, `_ical_`, `_ld_cron_tick` (every 5 minutes; each feed still runs on its own cadence), `teatatu_events_series_cron_tick` (hourly), `teatatu_events_links_cron_tick` (daily, only where linked events are on), plus one-off batch jobs for duplicate-key backfill and neighbourhood re-resolution. Every hook is re-checked on `init`.
 
+== Teatatu Data (optional) ==
+
+When the Teatatu Data plugin is active and a steward switches a list on in its **Connections** tab, Teatatu Data keeps that list here up to date on every site: **Neighbourhoods** and **street rules**, **Venues**, **Sources**, **Event Tags** and **Categories**. Existing terms are linked (term meta `teatatu_data_ref`), not replaced, so events, URLs, shortcodes and REST are unchanged.
+
+While a list is managed it is read-only here — its tab shows the list with a link to Teatatu Data, and new or changed terms are refused on every path (these screens, term screens, REST, agents, imports). Switch the list off, or deactivate Teatatu Data, and everything here is editable again with the last synced data kept. Code: `includes/teatatu-data-bridge.php`.
+
 == Uninstall ==
 
 Always removes the agent role, capabilities, scheduled jobs and settings. With "Delete all Teatatu Events data when this plugin is uninstalled" ticked, also deletes every event (including trashed), series, link, feed configuration and Events term on every site. Teatatu News data is never touched.

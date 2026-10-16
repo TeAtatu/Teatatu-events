@@ -167,6 +167,10 @@ function teatatu_events_guard_curated_term_creation( $term, $taxonomy ) {
 	if ( is_wp_error( $term ) ) {
 		return $term;
 	}
+	// Teatatu Data's sync keeps managed lists (Venues, Event Tags) in step.
+	if ( 'teatatu_events_neighbourhood' !== $taxonomy && function_exists( 'teatatu_events_data_syncing' ) && teatatu_events_data_syncing() ) {
+		return $term;
+	}
 	if ( 'teatatu_events_neighbourhood' === $taxonomy && empty( $GLOBALS['teatatu_events_seeding_neighbourhoods'] ) ) {
 		return new WP_Error( 'teatatu_events_curated_term', __( 'Neighbourhoods are fixed; they cannot be added.', 'teatatu-events' ) );
 	}

@@ -57,6 +57,7 @@ require_once TEATATU_EVENTS_DIR . 'includes/admin-linked.php';
 require_once TEATATU_EVENTS_DIR . 'includes/admin-shortcodes.php';
 require_once TEATATU_EVENTS_DIR . 'includes/admin-bulk.php';
 require_once TEATATU_EVENTS_DIR . 'includes/updater.php';
+require_once TEATATU_EVENTS_DIR . 'includes/teatatu-data-bridge.php';
 
 /**
  * Fired on plugin activation. Handles both single-site and network activation.

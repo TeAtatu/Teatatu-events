@@ -60,3 +60,7 @@ On multisite, your user exists on one site only — always use that site's own `
 | 409 | Inspect `data.existing_id`; update that event or report it |
 
 Full table: [`MCP-GUIDE.md` §8](MCP-GUIDE.md).
+
+## When Teatatu Data manages a list
+
+If the site uses Teatatu Data to manage venues, sources, event tags, categories or neighbourhoods, creating or changing those terms here fails with `teatatu_events_managed_by_data` (HTTP 403). Look the item up in Teatatu Data instead (its `SKILL.md`) and propose any change there; once a steward approves it, it is copied here. Assigning existing terms to your drafts works as before.

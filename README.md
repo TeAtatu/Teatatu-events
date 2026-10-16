@@ -56,6 +56,10 @@ cd teatatu-events && php tools/build-neighbourhood-streets.php
 
 Fetches Te Atatū Peninsula address points and the boundary roads from OpenStreetMap (Overpass API) and rewrites `assets/data/`. It fails if a street can't be described by clean house-number ranges. Data © OpenStreetMap contributors (ODbL).
 
+## Teatatu Data (optional)
+
+With the [Teatatu Data](https://github.com/TeAtatu/Teatatu-data-management) plugin active, a steward can let it manage this plugin's neighbourhoods, street rules, venues, sources, event tags and categories (its Connections tab). Teatatu Data then keeps those lists up to date on every site, linking existing terms, and they become read-only here. Without it, nothing changes. See `includes/teatatu-data-bridge.php`.
+
 ## Extending this plugin with AI
 
 [`prompt.md`](prompt.md) captures the plugin's architecture and invariants. Paste it into a fresh AI coding session along with the change you want, so updates stay consistent with how the plugin was built.

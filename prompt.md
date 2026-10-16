@@ -45,6 +45,8 @@ Preserve these invariants unless the change explicitly asks to alter them:
 
 13. Security baseline: nonces on every form/handler; narrowest current_user_can(); verify an ID is really ours (get_post_type()/taxonomy) before acting; never pass post_type to wp_update_post for an existing ID; escape all output, sanitise all input; DOM selectors are sanitised to a closed character set before XPath interpolation; third-party URLs are fetched with wp_safe_remote_get() and a size cap.
 
+13a. Teatatu Data is an optional companion: the only code that knows about it is includes/teatatu-data-bridge.php, which uses function_exists() checks so this plugin works identically without it. While Teatatu Data manages a list (teatatu_events_data_manages()), that list is read-only here on every path, except Teatatu Data's own sync (teatatu_events_data_syncing()). Any new code path that creates or edits venue, source, tag, category or neighbourhood terms, or the street rules, must respect that — don't add a new way around it.
+
 14. Update in lockstep: readme.txt, the in-admin Shortcodes tab (includes/admin-shortcodes.php), SKILL.md and MCP-GUIDE.md (anything agents touch over REST), SPEC.md, the Version header + TEATATU_EVENTS_VERSION, and the readme changelog.
 
 Ask before changing: the agent capability boundary, the standard-tables rule, link-only images, the off-by-default auto-publish/auto-apply toggles and who may switch them on, or the removed-at-source safeguards.
