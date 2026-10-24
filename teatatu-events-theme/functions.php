@@ -188,7 +188,8 @@ function ttev_body_class( $classes ) {
 function ttev_network_sites() {
 	$sites = array(
 		'main'   => array( __( 'Te Atatū', 'teatatu-events-theme' ), 'https://teatatu.nz/' ),
-		'events' => array( __( 'Events', 'teatatu-events-theme' ), home_url( '/' ) ),
+		// The network's Events Master Site when one is set (Network Admin > Settings > Teatatu Events).
+		'events' => array( __( 'Events', 'teatatu-events-theme' ), function_exists( 'teatatu_events_master_site_url' ) && teatatu_events_master_site_url() ? teatatu_events_master_site_url() : home_url( '/' ) ),
 	);
 	$labels = array(
 		'news'   => __( 'News', 'teatatu-events-theme' ),
@@ -214,17 +215,37 @@ function ttev_network_sites() {
 
 /**
  * The sections that appear only when their plugin is active: key =>
- * {file: plugin main file name, post_type: its listing post type (for a
- * single-site install), url: default address}.
+ * {file: plugin main file name, master: the plugin's Master Site network
+ * setting, post_type: its listing post type (for a single-site install),
+ * url: default address}.
  *
  * @return array[]
  */
 function ttev_section_plugins() {
 	return array(
-		'news'   => array( 'file' => 'teatatu-news.php', 'post_type' => 'teatatu_news', 'url' => 'https://news.teatatu.nz/' ),
-		'homes'  => array( 'file' => 'teatatu-homes.php', 'post_type' => 'teatatu_home', 'url' => 'https://homes.teatatu.nz/' ),
-		'market' => array( 'file' => 'teatatu-market.php', 'post_type' => '', 'url' => 'https://market.teatatu.nz/' ),
+		'news'   => array( 'file' => 'teatatu-news.php', 'master' => 'teatatu_news_master_site_id', 'post_type' => 'teatatu_news', 'url' => 'https://news.teatatu.nz/' ),
+		'homes'  => array( 'file' => 'teatatu-homes.php', 'master' => 'teatatu_homes_master_site_id', 'post_type' => 'teatatu_home', 'url' => 'https://homes.teatatu.nz/' ),
+		'market' => array( 'file' => 'teatatu-market.php', 'master' => 'teatatu_market_master_site_id', 'post_type' => '', 'url' => 'https://market.teatatu.nz/' ),
 	);
+}
+
+/**
+ * The Master Site a section's plugin has set (Network Admin > Settings >
+ * Teatatu News / Homes / Market), or 0. Read through the plugin's own
+ * teatatu_<name>_get_master_site_id() when it has one, else its network
+ * setting directly (the theme may run on a site where the plugin isn't
+ * loaded).
+ *
+ * @param array $def Section definition from ttev_section_plugins().
+ * @return int
+ */
+function ttev_section_master_site_id( $def ) {
+	if ( ! is_multisite() || empty( $def['master'] ) ) {
+		return 0;
+	}
+	$getter = str_replace( '_master_site_id', '_get_master_site_id', $def['master'] );
+	$id     = function_exists( $getter ) ? (int) call_user_func( $getter ) : (int) get_site_option( $def['master'], 0 );
+	return $id && get_site( $id ) ? $id : 0;
 }
 
 /**
@@ -279,7 +300,8 @@ function ttev_forget_plugin_activity() {
 /**
  * The address for a section, or '' when its plugin isn't active.
  *
- * - Multisite: the site whose address starts with the section name
+ * - Multisite: the Master Site set in that plugin's network settings;
+ *   without one, the site whose address starts with the section name
  *   (homes.example.nz or example.nz/homes/) when the plugin runs there,
  *   else the one site it is activated on, else the default address.
  * - Single site (the plugin runs on this site): its listing page, else the
@@ -297,6 +319,10 @@ function ttev_section_url( $key, $def ) {
 	if ( ! is_multisite() ) {
 		$archive = $def['post_type'] && post_type_exists( $def['post_type'] ) ? get_post_type_archive_link( $def['post_type'] ) : '';
 		return $archive ? $archive : $def['url'];
+	}
+	$master = ttev_section_master_site_id( $def );
+	if ( $master ) {
+		return get_home_url( $master, '/' );
 	}
 	$candidates = $activity['network'] ? get_sites( array( 'fields' => 'ids', 'number' => 500 ) ) : $activity['sites'];
 	foreach ( $candidates as $site_id ) {

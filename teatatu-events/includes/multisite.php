@@ -1,6 +1,6 @@
 <?php
 /**
- * Multisite helpers: which sites may show network listings, and the cache-version counters
+ * Multisite helpers: the Events Master Site, which sites may show network listings, and the cache-version counters
  * used by the network aggregation, subscribe feeds and other cached output.
  *
  * Rather than registering and deleting individual transient keys, every
@@ -15,10 +15,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Sites allowed to show network listings: the [teatatu_events_network_*]
  * shortcodes, the network REST feed and the network calendar feed. A
- * network setting holding an array of site IDs (in the order saved).
- *
- * Installs from before this setting existed had a single "Master Site";
- * until the setting is first saved, that site is the list.
+ * network setting holding an array of site IDs (in the order saved), plus
+ * the Events Master Site, which is always included and comes first.
  *
  * @return int[]
  */
@@ -26,12 +24,11 @@ function teatatu_events_get_network_display_site_ids() {
 	if ( ! is_multisite() ) {
 		return array();
 	}
-	$ids = get_site_option( 'teatatu_events_network_sites', false );
-	if ( false === $ids ) {
-		$legacy = (int) get_site_option( 'teatatu_events_master_site_id', 0 );
-		$ids    = $legacy ? array( $legacy ) : array();
-	}
-	return array_values( array_unique( array_filter( array_map( 'absint', (array) $ids ) ) ) );
+	$ids    = get_site_option( 'teatatu_events_network_sites', array() );
+	$ids    = array_values( array_unique( array_filter( array_map( 'absint', (array) $ids ) ) ) );
+	$master = teatatu_events_get_master_site_id();
+	// The Master Site always shows network listings, and comes first.
+	return $master ? array_values( array_unique( array_merge( array( $master ), $ids ) ) ) : $ids;
 }
 
 /**
@@ -43,7 +40,6 @@ function teatatu_events_set_network_display_site_ids( $ids ) {
 	$valid = array_map( 'intval', get_sites( array( 'fields' => 'ids', 'number' => 0 ) ) );
 	$ids   = array_values( array_intersect( array_unique( array_filter( array_map( 'absint', (array) $ids ) ) ), $valid ) );
 	update_site_option( 'teatatu_events_network_sites', $ids );
-	delete_site_option( 'teatatu_events_master_site_id' ); // Replaced by the list.
 	teatatu_events_bump_cache_version();
 }
 
@@ -57,23 +53,55 @@ function teatatu_events_is_network_display_site() {
 }
 
 /**
- * The first network display site (used where one site has to come first,
- * e.g. the default duplicate priority). Kept under its old name.
+ * The network's Events Master Site: the main events site of the network
+ * (like Teatatu News's Master Site). It always shows network listings
+ * (teatatu_events_get_network_display_site_ids() puts it first), comes
+ * first when cross-site duplicates are merged (after the Duplicate
+ * priority list), and is where "Events" links point.
  *
- * @return int 0 if none.
+ * @return int 0 if none is set (or the site no longer exists).
  */
 function teatatu_events_get_master_site_id() {
-	$ids = teatatu_events_get_network_display_site_ids();
-	return $ids ? $ids[0] : 0;
+	if ( ! is_multisite() ) {
+		return 0;
+	}
+	$id = (int) get_site_option( 'teatatu_events_master_site_id', 0 );
+	return $id && get_site( $id ) ? $id : 0;
 }
 
 /**
- * Old name for teatatu_events_is_network_display_site().
+ * Sets the Events Master Site (0 = none).
+ *
+ * @param int $id Site ID.
+ */
+function teatatu_events_set_master_site_id( $id ) {
+	$id = absint( $id );
+	if ( $id && ! get_site( $id ) ) {
+		$id = 0;
+	}
+	update_site_option( 'teatatu_events_master_site_id', $id );
+	teatatu_events_bump_cache_version();
+}
+
+/**
+ * Whether the current site is the Events Master Site.
  *
  * @return bool
  */
 function teatatu_events_is_master_site() {
-	return teatatu_events_is_network_display_site();
+	$master = teatatu_events_get_master_site_id();
+	return $master > 0 && get_current_blog_id() === $master;
+}
+
+/**
+ * The Events Master Site's address (for "Events" links from any site).
+ *
+ * @param string $path Path on that site.
+ * @return string '' when no Master Site is set.
+ */
+function teatatu_events_master_site_url( $path = '/' ) {
+	$master = teatatu_events_get_master_site_id();
+	return $master ? get_home_url( $master, $path ) : '';
 }
 
 /**

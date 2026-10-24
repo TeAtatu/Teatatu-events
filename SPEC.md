@@ -335,7 +335,7 @@ That's six of each, twelve in total. Rules that keep the pairs in step:
 - **One implementation per display.** Each pair calls one render function with a `scope` of `site` or `network`. The only thing `scope` changes is where the events come from: `teatatu_events_query_items()` for this site, and `teatatu_events_get_network_feed_items()` for the network. Filtering, sorting, grouping, markup and CSS are shared, so a new attribute or display added to one scope is automatically in the other.
 - **Same attributes.** Every attribute below works in both scopes. Two are network-only: `exclude_sites` (comma list of site IDs to leave out) and `site_label` (show which site each event is from). The site versions ignore them.
 - **Linked events** (§3.6) appear only in the *site* versions, alongside local events. The network versions skip links because they already show the source event. Attribute `linked` = `include` (default when the site setting is on) · `exclude` · `only`.
-- **Network shortcodes only render on sites enabled for network listings.** A network setting, **Network listings**, holds an array of site IDs (`teatatu_events_network_sites`), chosen with a checkbox per site; any number of sites can be ticked, and each shows the same network-wide events. Elsewhere the network shortcodes show an admin-only notice and output nothing for visitors. Installs from before this setting had a single Master Site (`teatatu_events_master_site_id`); until the setting is first saved that site is the list, and saving retires the old option.
+- **Network shortcodes only render on sites enabled for network listings.** A network setting, **Network listings**, holds an array of site IDs (`teatatu_events_network_sites`), chosen with a checkbox per site; any number of sites can be ticked, and each shows the same network-wide events. Elsewhere the network shortcodes show an admin-only notice and output nothing for visitors. Installs from before this setting had a single Master Site (`teatatu_events_master_site_id`); until the setting is first saved that site is the list, and saving retires the old option. An **Events Master Site** (network setting `teatatu_events_master_site_id`, a dropdown like Teatatu News's Master Site) is the network's main events site: it always shows network listings (it is added to the list, first), comes first when duplicates are merged (after the Duplicate priority list), and is where "Events" links from other sites point (`teatatu_events_master_site_url()`; the events theme's network strip uses it). Saving the Network listings checkboxes never clears it.
 - **Links go to the event's home site.** A network card links to the event's page (or Read More URL) on the site it belongs to, never a copy on the site showing the listing.
 - **Cross-site filtering is by slug.** On the network, `category`, `tag`, `source`, `venue` and `neighbourhood` match term slugs on each site. The three neighbourhood terms are seeded with the same slugs on every site, so neighbourhood filters work across the whole network. Visitor filter dropdowns on a network shortcode list the combined terms from all sites, merged by slug.
 - **Network archive paging:** page *n* fetches up to *n* × `count` past events from each site, then merges and slices them. It's cached like the other network queries. Deep pages on large networks cost more, so `count` is capped at 50.
@@ -389,7 +389,7 @@ Two events are duplicates if their external keys match, or, when the fuzzy setti
 - Duplicate removal never changes or deletes anything. It only affects what is displayed. Each site's own (site-scope) listings still show its own copy.
 
 **Which copy is shown (the canonical copy):**
-1. The copy on the site highest in the **Duplicate priority** network setting (an ordered list of sites; unlisted sites follow: the network listing sites in their saved order, then by site ID).
+1. The copy on the site highest in the **Duplicate priority** network setting (an ordered list of sites; unlisted sites follow: the Master Site, then the other network listing sites in their saved order, then by site ID).
 2. On a tie, the most recently updated copy.
 
 The card links to the canonical copy. If some copies have newer information than the canonical one (e.g. one site has already imported a cancellation), the **newest status and dates** are shown, so a stale copy never hides a cancellation. With `site_label="true"`, the card reads "From *Site A* · also on *Site B*, *Site C*". Network REST items include `also_on: [{site_id, name, url}]`.
@@ -545,7 +545,7 @@ Editor/Administrator: all Events caps, including `manage_teatatu_events_venues`,
 
 ## 9. Settings
 
-On top of News's (GitHub repo/token, delete-on-uninstall) — with News's single Master Site replaced by **Network listings**, an array of the sites allowed to show network listings:
+On top of News's (Master Site, GitHub repo/token, delete-on-uninstall) — the Master Site is the main events site, and **Network listings** adds any other sites allowed to show network listings:
 - Default event duration (2 h)
 - Default upcoming dates kept per series (12, maximum 12)
 - Hide cancelled events from lists by default (off)

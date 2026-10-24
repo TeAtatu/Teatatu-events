@@ -33,7 +33,7 @@ Teatatu Events runs on its own or side by side with Teatatu News — they share 
 1. Copy the `teatatu-events` folder to `wp-content/plugins/`.
 2. Activate it (or **Network Activate** on multisite).
 3. Open **Teatatu Events** in the admin menu: add Venues and Event Tags, then events.
-4. Settings: **Settings > Teatatu Events** (single site) or **Network Admin > Settings > Teatatu Events** (multisite) — default event duration, series length, removed-at-source threshold, default country, date formats, network listing sites, linked events, duplicate handling, GitHub updates.
+4. Settings: **Settings > Teatatu Events** (single site) or **Network Admin > Settings > Teatatu Events** (multisite) — default event duration, series length, removed-at-source threshold, default country, date formats, network listing sites, linked events, duplicate handling, GitHub updates. On multisite, set the **Master Site** (the network's main events site, like Teatatu News's Master Site): it always shows the network shortcodes and feeds, comes first when duplicates are merged, and is where "Events" links point. **Network listings** adds other sites that may show network listings.
 5. Sites that rely on timely imports should run a real server cron against `wp-cron.php` (and set `DISABLE_WP_CRON`), because WP-Cron only runs on page visits.
 
 == The Teatatu Events screen ==

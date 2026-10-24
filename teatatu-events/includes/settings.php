@@ -143,6 +143,7 @@ function teatatu_events_render_settings_page() {
 	$github_token_is_set = (bool) teatatu_events_get_option( 'teatatu_events_github_token', '' );
 	$delete_on_uninstall = (bool) teatatu_events_get_option( 'teatatu_events_delete_data_on_uninstall', false );
 	$network_sites       = teatatu_events_get_network_display_site_ids();
+	$master_site_id      = teatatu_events_get_master_site_id();
 	// Always the plain (non-network) admin-post.php, even under Network
 	// Admin: wp-admin/network/admin-post.php does not exist in core.
 	$post_url = admin_url( 'admin-post.php' );
@@ -206,6 +207,18 @@ function teatatu_events_render_settings_page() {
 				<h2><?php esc_html_e( 'Network', 'teatatu-events' ); ?></h2>
 				<table class="form-table">
 					<tr>
+						<th><label for="tte_master_site"><?php esc_html_e( 'Master Site', 'teatatu-events' ); ?></label></th>
+						<td>
+							<select id="tte_master_site" name="master_site_id">
+								<option value="0"><?php esc_html_e( '— None —', 'teatatu-events' ); ?></option>
+								<?php foreach ( get_sites( array( 'number' => 500 ) ) as $site ) : ?>
+									<option value="<?php echo esc_attr( $site->blog_id ); ?>" <?php selected( $master_site_id, (int) $site->blog_id ); ?>><?php echo esc_html( ( $site->blogname ? $site->blogname : $site->domain . $site->path ) . ' (' . $site->domain . $site->path . ')' ); ?></option>
+								<?php endforeach; ?>
+							</select>
+							<p class="description"><?php esc_html_e( "The network's main events site, like Teatatu News's Master Site. It always shows network listings, comes first when the same event is listed by several sites, and is where \"Events\" links point from the other sites.", 'teatatu-events' ); ?></p>
+						</td>
+					</tr>
+					<tr>
 						<th><?php esc_html_e( 'Network listings', 'teatatu-events' ); ?></th>
 						<td>
 							<input type="hidden" name="network_sites_sent" value="1" />
@@ -213,8 +226,9 @@ function teatatu_events_render_settings_page() {
 								<legend class="screen-reader-text"><?php esc_html_e( 'Sites that can show network listings', 'teatatu-events' ); ?></legend>
 								<?php foreach ( get_sites( array( 'number' => 500 ) ) as $site ) : ?>
 									<label style="display:block;">
-										<input type="checkbox" name="network_sites[]" value="<?php echo esc_attr( $site->blog_id ); ?>" <?php checked( in_array( (int) $site->blog_id, $network_sites, true ) ); ?> />
-										<?php echo esc_html( $site->blogname ? $site->blogname : $site->domain . $site->path ); ?> <span class="description">(<?php echo esc_html( $site->domain . $site->path ); ?>, ID <?php echo esc_html( $site->blog_id ); ?>)</span>
+										<?php $is_master = (int) $site->blog_id === $master_site_id; ?>
+										<input type="checkbox" name="network_sites[]" value="<?php echo esc_attr( $site->blog_id ); ?>" <?php checked( in_array( (int) $site->blog_id, $network_sites, true ) ); ?> <?php disabled( $is_master ); ?> />
+										<?php echo esc_html( $site->blogname ? $site->blogname : $site->domain . $site->path ); ?> <span class="description">(<?php echo esc_html( $site->domain . $site->path ); ?>, ID <?php echo esc_html( $site->blog_id ); ?>)<?php echo $is_master ? ' — ' . esc_html__( 'Master Site, always included', 'teatatu-events' ) : ''; ?></span>
 									</label>
 								<?php endforeach; ?>
 							</fieldset>
@@ -237,7 +251,7 @@ function teatatu_events_render_settings_page() {
 					<tr>
 						<th><label for="tte_dedupe_priority"><?php esc_html_e( 'Duplicate priority', 'teatatu-events' ); ?></label></th>
 						<td><input type="text" id="tte_dedupe_priority" name="dedupe_priority" class="regular-text" value="<?php echo esc_attr( $s( 'dedupe_priority' ) ); ?>" placeholder="1, 4, 2" />
-						<p class="description"><?php esc_html_e( 'Site IDs, highest priority first. The copy from the highest-priority site is shown. Unlisted sites follow: the network listing sites first, then by site ID.', 'teatatu-events' ); ?></p></td>
+						<p class="description"><?php esc_html_e( 'Site IDs, highest priority first. The copy from the highest-priority site is shown. Unlisted sites follow: the Master Site first, then the other network listing sites, then by site ID.', 'teatatu-events' ); ?></p></td>
 					</tr>
 				</table>
 			<?php endif; ?>
@@ -332,6 +346,9 @@ function teatatu_events_handle_save_settings() {
 		$values['dedupe_fuzzy']    = ! empty( $_POST['dedupe_fuzzy'] ) ? 1 : 0;
 		$values['dedupe_manual']   = ! empty( $_POST['dedupe_manual'] ) ? 1 : 0;
 		$values['dedupe_priority'] = $priority;
+		if ( isset( $_POST['master_site_id'] ) ) {
+			teatatu_events_set_master_site_id( absint( $_POST['master_site_id'] ) );
+		}
 		if ( ! empty( $_POST['network_sites_sent'] ) ) {
 			teatatu_events_set_network_display_site_ids( array_map( 'absint', (array) wp_unslash( $_POST['network_sites'] ?? array() ) ) );
 		}
