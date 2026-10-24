@@ -24,6 +24,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+// The Teatatu Events plugin runs these checks itself (includes/theme-updater.php),
+// because it is loaded on every site and theme code isn't. This copy is the
+// fallback for when the plugin isn't active.
+if ( function_exists( 'teatatu_events_theme_updater_loaded' ) ) {
+	return;
+}
+
 /**
  * The theme's folder name (its stylesheet/template slug).
  *

@@ -47,11 +47,13 @@ Styled with the Te Atatū Local design system, the shared look of the five Te At
 
 = Updates =
 
-The theme updates itself from the same GitHub release as the Teatatu Events plugin (repository and token are set in the plugin's settings; default TeAtatu/Teatatu-events).
+The theme updates from the same GitHub release as the Teatatu Events plugin (repository and token are set in the plugin's settings; default TeAtatu/Teatatu-events). The plugin runs the theme's update checks (teatatu-events/includes/theme-updater.php), because it is loaded on every site of a network while theme code only loads where the theme is active; inc/updater.php is the theme's own copy, used only when the plugin isn't active.
+
+* Auto-updates: switched on once, when the plugin first finds the theme installed. Turn them off or on again with the theme's "Disable auto-updates" / "Enable auto-updates" link (Network Admin > Themes on multisite, Appearance > Themes on a single site); that choice is always respected. Settings > Teatatu Events shows the current state.
 
 * It compares its own Version in teatatu-events-theme/style.css at the latest release, so a plugin-only release doesn't offer a theme update.
 * The package is the release's attached teatatu-events-theme-<version>.zip (built by teatatu-events/tools/build-release.sh), else GitHub's source zip, from which only the teatatu-events-theme/ folder is installed.
-* Updates install automatically only when "Enable auto-updates" is on for the theme (Appearance > Themes; Network Admin > Themes on multisite). Otherwise click Update now.
+* With auto-updates off, the "update available" notice still shows; click Update now.
 
 == Changelog ==
 

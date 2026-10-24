@@ -274,6 +274,19 @@ function teatatu_events_render_settings_page() {
 		<hr />
 		<h2><?php esc_html_e( 'Updates', 'teatatu-events' ); ?></h2>
 		<p><?php esc_html_e( 'Current version:', 'teatatu-events' ); ?> <strong><?php echo esc_html( TEATATU_EVENTS_VERSION ); ?></strong></p>
+		<?php
+		$theme_slug = teatatu_events_theme_slug();
+		if ( $theme_slug ) :
+			$theme_auto   = in_array( $theme_slug, (array) get_site_option( 'auto_update_themes', array() ), true );
+			$themes_url   = is_multisite() ? network_admin_url( 'themes.php' ) : admin_url( 'themes.php' );
+			?>
+			<p>
+				<?php esc_html_e( 'Teatatu Events Theme:', 'teatatu-events' ); ?> <strong><?php echo esc_html( teatatu_events_theme_installed_version() ); ?></strong>
+				· <?php echo $theme_auto ? esc_html__( 'auto-updates on', 'teatatu-events' ) : esc_html__( 'auto-updates off', 'teatatu-events' ); ?>
+				· <a href="<?php echo esc_url( $themes_url ); ?>"><?php echo $theme_auto ? esc_html__( 'Turn off in Themes', 'teatatu-events' ) : esc_html__( 'Turn on in Themes', 'teatatu-events' ); ?></a>
+			</p>
+			<p class="description"><?php esc_html_e( 'The theme updates from the same GitHub release as this plugin, when its own version has gone up. Its auto-updates follow the Enable / Disable auto-updates link for the theme on the Themes screen.', 'teatatu-events' ); ?></p>
+		<?php endif; ?>
 		<form method="post" action="<?php echo esc_url( $post_url ); ?>">
 			<?php wp_nonce_field( 'teatatu_events_check_updates', 'teatatu_events_check_updates_nonce' ); ?>
 			<input type="hidden" name="action" value="teatatu_events_check_updates" />

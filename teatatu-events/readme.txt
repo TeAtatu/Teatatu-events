@@ -148,6 +148,8 @@ Always removes the agent role, capabilities, scheduled jobs and settings. With "
 
 The plugin updates itself from the latest GitHub Release of the repository set in the settings (default `TeAtatu/Teatatu-events`), through the normal WordPress plugin updates screen, including "Enable auto-updates". It checks every 12 hours; **Check for Updates Now** in the settings checks straight away. Releases should attach the zip built by `tools/build-release.sh`; without one, GitHub's source zip is used and only its `teatatu-events/` folder is installed. For a private repository, add a GitHub token in the settings.
 
+It also runs the update checks for Teatatu Events Theme (includes/theme-updater.php) from the same release, so they work on every site of a network. The theme's auto-updates are on by default (set once) and follow the theme's Enable / Disable auto-updates link on the Themes screen.
+
 == Frequently Asked Questions ==
 
 = Can it run alongside Teatatu News? =
