@@ -177,21 +177,136 @@ function ttev_body_class( $classes ) {
 }
 
 /**
- * The five Te Atatū Local sites for the network strip, in the design
- * system's fixed order. Filter `ttev_network_sites` to change addresses
- * (e.g. on a staging network).
+ * The Te Atatū Local sites for the network strip, in the design system's
+ * fixed order: Te Atatū and Events always; News, Homes and Market only when
+ * their plugin is active (see ttev_section_plugins()). Filter
+ * `ttev_network_sites` to change labels or addresses (e.g. on a staging
+ * network) or to add/remove sites.
  *
  * @return array[] key => [label, url]
  */
 function ttev_network_sites() {
-	return apply_filters(
-		'ttev_network_sites',
-		array(
-			'main'   => array( __( 'Te Atatū', 'teatatu-events-theme' ), 'https://teatatu.nz/' ),
-			'events' => array( __( 'Events', 'teatatu-events-theme' ), home_url( '/' ) ),
-			'news'   => array( __( 'News', 'teatatu-events-theme' ), 'https://news.teatatu.nz/' ),
-			'homes'  => array( __( 'Homes', 'teatatu-events-theme' ), 'https://homes.teatatu.nz/' ),
-			'market' => array( __( 'Market', 'teatatu-events-theme' ), 'https://market.teatatu.nz/' ),
-		)
+	$sites = array(
+		'main'   => array( __( 'Te Atatū', 'teatatu-events-theme' ), 'https://teatatu.nz/' ),
+		'events' => array( __( 'Events', 'teatatu-events-theme' ), home_url( '/' ) ),
 	);
+	$labels = array(
+		'news'   => __( 'News', 'teatatu-events-theme' ),
+		'homes'  => __( 'Homes', 'teatatu-events-theme' ),
+		'market' => __( 'Market', 'teatatu-events-theme' ),
+	);
+	foreach ( ttev_section_plugins() as $key => $def ) {
+		$url = ttev_section_url( $key, $def );
+		if ( '' !== $url ) {
+			$sites[ $key ] = array( $labels[ $key ], $url );
+		}
+	}
+	// Keep the design system's order: Te Atatū, Events, News, Homes, Market.
+	$order = array_flip( array( 'main', 'events', 'news', 'homes', 'market' ) );
+	uksort(
+		$sites,
+		function ( $a, $b ) use ( $order ) {
+			return ( $order[ $a ] ?? 99 ) <=> ( $order[ $b ] ?? 99 );
+		}
+	);
+	return apply_filters( 'ttev_network_sites', $sites );
+}
+
+/**
+ * The sections that appear only when their plugin is active: key =>
+ * {file: plugin main file name, post_type: its listing post type (for a
+ * single-site install), url: default address}.
+ *
+ * @return array[]
+ */
+function ttev_section_plugins() {
+	return array(
+		'news'   => array( 'file' => 'teatatu-news.php', 'post_type' => 'teatatu_news', 'url' => 'https://news.teatatu.nz/' ),
+		'homes'  => array( 'file' => 'teatatu-homes.php', 'post_type' => 'teatatu_home', 'url' => 'https://homes.teatatu.nz/' ),
+		'market' => array( 'file' => 'teatatu-market.php', 'post_type' => '', 'url' => 'https://market.teatatu.nz/' ),
+	);
+}
+
+/**
+ * Where a plugin (by main file name, any folder) is active. The network-wide
+ * list is read fresh every time (one stored option); the slower scan of
+ * each site's own list is cached for 10 minutes, and cleared whenever a
+ * plugin is (de)activated on a site using this theme.
+ *
+ * @param string $file Plugin main file name, e.g. teatatu-homes.php.
+ * @return array {network: bool, sites: int[]} — sites is every site it is
+ *               activated on individually (on single site: this site).
+ */
+function ttev_plugin_activity( $file ) {
+	$matches = function ( $plugins ) use ( $file ) {
+		foreach ( (array) $plugins as $plugin ) {
+			if ( basename( (string) $plugin ) === $file ) {
+				return true;
+			}
+		}
+		return false;
+	};
+	if ( ! is_multisite() ) {
+		return array( 'network' => false, 'sites' => $matches( get_option( 'active_plugins', array() ) ) ? array( get_current_blog_id() ) : array() );
+	}
+	if ( $matches( array_keys( (array) get_site_option( 'active_sitewide_plugins', array() ) ) ) ) {
+		return array( 'network' => true, 'sites' => array() );
+	}
+	$scan = get_site_transient( 'ttev_plugin_activity' );
+	$scan = is_array( $scan ) ? $scan : array();
+	if ( ! isset( $scan[ $file ] ) ) {
+		$scan[ $file ] = array();
+		foreach ( get_sites( array( 'fields' => 'ids', 'number' => 500 ) ) as $site_id ) {
+			if ( $matches( get_blog_option( $site_id, 'active_plugins', array() ) ) ) {
+				$scan[ $file ][] = (int) $site_id;
+			}
+		}
+		set_site_transient( 'ttev_plugin_activity', $scan, 10 * MINUTE_IN_SECONDS );
+	}
+	return array( 'network' => false, 'sites' => $scan[ $file ] );
+}
+
+add_action( 'activated_plugin', 'ttev_forget_plugin_activity' );
+add_action( 'deactivated_plugin', 'ttev_forget_plugin_activity' );
+
+/**
+ * Plugin (de)activation anywhere on the network refreshes the strip.
+ */
+function ttev_forget_plugin_activity() {
+	delete_site_transient( 'ttev_plugin_activity' );
+}
+
+/**
+ * The address for a section, or '' when its plugin isn't active.
+ *
+ * - Multisite: the site whose address starts with the section name
+ *   (homes.example.nz or example.nz/homes/) when the plugin runs there,
+ *   else the one site it is activated on, else the default address.
+ * - Single site (the plugin runs on this site): its listing page, else the
+ *   default address.
+ *
+ * @param string $key Section key.
+ * @param array  $def Section definition from ttev_section_plugins().
+ * @return string
+ */
+function ttev_section_url( $key, $def ) {
+	$activity = ttev_plugin_activity( $def['file'] );
+	if ( ! $activity['network'] && ! $activity['sites'] ) {
+		return '';
+	}
+	if ( ! is_multisite() ) {
+		$archive = $def['post_type'] && post_type_exists( $def['post_type'] ) ? get_post_type_archive_link( $def['post_type'] ) : '';
+		return $archive ? $archive : $def['url'];
+	}
+	$candidates = $activity['network'] ? get_sites( array( 'fields' => 'ids', 'number' => 500 ) ) : $activity['sites'];
+	foreach ( $candidates as $site_id ) {
+		$site = get_site( $site_id );
+		if ( $site && ( 0 === strpos( $site->domain, $key . '.' ) || 0 === strpos( trim( $site->path, '/' ) . '/', $key . '/' ) ) ) {
+			return get_home_url( $site_id, '/' );
+		}
+	}
+	if ( ! $activity['network'] && 1 === count( $activity['sites'] ) ) {
+		return get_home_url( $activity['sites'][0], '/' );
+	}
+	return $def['url'];
 }
